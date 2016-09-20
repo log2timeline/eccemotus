@@ -2,6 +2,7 @@
 import unittest
 import eccemotus.lib.grapher as G
 
+#TODO(vlejd) add more tests after lib/graph.py is reviewed.
 class GrapherTest(unittest.TestCase):
   """Test ParserManager """
   def test_init(self):
