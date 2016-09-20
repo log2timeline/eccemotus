@@ -17,12 +17,15 @@ Than you have to parse the data with parsed_data_generator(data_generator).
 Last think you want to do is to call get_graph_json(parsed_data_generator)
 to create the actual graph.
 """
+#TODO this will have its own command line interface.
 
 from __future__ import print_function
 import sys
 import json
-from eccemotus.lib.grapher import create_graph
-from eccemotus.lib.parsers import ParserManager
+
+# How should dhose imports look like to not break run_tests.py ?
+from lib.grapher import create_graph # pylint: disable=relative-import
+from lib.parsers import ParserManager # pylint: disable=relative-import
 
 
 def file_data_generator(filename, verbose=False):
@@ -81,8 +84,8 @@ def elastic_data_generator(client, indexes, verbose=False):
       event = response['_source']
       event["timesketch_id"] = response["_id"]
       yield event
-  except Exception as e:
-
+  except Exception as e: # pylint: disable=broad-except
+    _ = e
     return
 
 
@@ -104,26 +107,16 @@ def parsed_data_generator(raw_generator):
 
 
 def get_graph(raw_generator, verbose=False):
+  """ Create graph from raw data."""
   parsed_generator = parsed_data_generator(raw_generator)
   graph = create_graph(parsed_generator, verbose)
   return graph
 
 
 def get_graph_json(raw_generator, verbose=False):
-  """Returns json representation for graph created based on raw_generator."""
+  """ Returns json representation for graph created based on raw_generator."""
 
   graph = get_graph(raw_generator, verbose=verbose)
   graph_json = json.dumps(graph.minimal_serialize())
   return graph_json
 
-
-def get_one(client, idd, indexes):
-  from elasticsearch.helpers import scan  #TODO add try except
-  for ind in indexes:
-    try:
-      res = client.get(index=ind, id=idd)
-      print(ParserManager.parse(res['_source']))
-    except:
-      print("nope")
-
-#TODO this will have its own command line interface.

@@ -1,7 +1,7 @@
 """ Provides basic methods for storing lateral movement logs in property Graph.
 
-For Default use-case you only need to call create_default_json(data). This
-returns json representation of property graph. This can be directly send to
+For Default use-case, call create_graph(data).minimal_serialize().
+This returns json representation of property graph. This can be directly send to
 javascript visualization.
 """
 
