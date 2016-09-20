@@ -90,3 +90,5 @@ ENV/
 
 # Pycharm IDE files
 .idea/
+
+.review
