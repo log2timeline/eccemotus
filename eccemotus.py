@@ -4,9 +4,9 @@ from __future__ import print_function
 import argparse
 import json
 import os
-import sys
 import shutil
-import eccemotus.eccemotus as E
+import eccemotus.eccemotus as E #pylint: disable=no-name-in-module
+# TODO fix problem with import
 
 def create_graph(generator, args):
   """ Handles creating and saving graph from data generator. """
@@ -110,7 +110,8 @@ if __name__ == u'__main__':
   sub_f2g.add_argument(
       u'output', action=u'store', help=output_help)
 
-  sub_render = subparsers.add_parser(u'render', help=u'creates html visualization')
+  render_help = u'creates html visualization'
+  sub_render = subparsers.add_parser(u'render', help=render_help)
   sub_render.set_defaults(routine=render)
 
   input_help = u'javascript with graph (use --javascript flag with f2g or e2g)'
