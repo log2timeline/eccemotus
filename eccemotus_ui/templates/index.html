@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <script type="text/javascript" language="javascript" src="static/d3/d3.min.js"></script>
+    <script type="text/javascript" language="javascript" src="static/lateral-map.js"></script>
+    <script type="text/javascript" language="javascript" src="static/graph.js"></script>
+</head>
+
+<body>
+    <h2>Computed graphs</h2>
+    <ul>
+        {% for graph in graphs %}
+        <li><a href="/graph/{{graph.id}}">{{ graph.name }}<a></li>
+        {% endfor %}
+    </ul>
+    <h2>Add new Graph</h2>
+    <p> This can take a while. You will be redirected back to this page after upload is complete.</p>
+
+    <h3>From file</h3>
+    <form action="" method=post>
+      <input type="text" name="name" placeholder="graph name">
+      <input type="text" name="filename" placeholder="filename">
+      <input type="submit" name="submit" value="file">
+    </form>
+
+    <h3>From elastic</h3>
+    <form action="" method=post>
+      <input type="text" name="name" placeholder="graph name">
+      <input type="text" name="ip" placeholder="ip (127.0.0.1)">
+      <input type="text" name="port" placeholder="port (9200)">
+      <textarea name="indexes" placeholder="space separated list of indexes"></textarea>
+      <input type="submit" name="submit" value="elastic">
+    </form>
+</body>
