@@ -22,7 +22,7 @@ from __future__ import print_function
 import sys
 import json
 
-from lib.grapher import CreateGraph # pylint: disable=relative-import
+from lib.graph import CreateGraph # pylint: disable=relative-import
 from lib.parsers import ParserManager # pylint: disable=relative-import
 
 elasticsearch = None

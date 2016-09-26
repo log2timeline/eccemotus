@@ -1,6 +1,6 @@
-""" Tests for lib/grapher.py."""
+""" Tests for lib/graph.py."""
 import unittest
-import eccemotus.lib.grapher as G
+import eccemotus.lib.graph as G
 import eccemotus.lib.parsers as P
 
 #TODO(vlejd) add more tests after lib/graph.py is reviewed.
