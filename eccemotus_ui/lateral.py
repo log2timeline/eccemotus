@@ -128,8 +128,8 @@ def Index():
       data_generator = E.FileDataGenerator(fname, verbose=True)
       graph = E.GetGraph(data_generator, verbose=True)
       graph_JSON = json.dumps(graph.MinimalSerialize())
-      add_graph(graph_name, graph_JSON)
-      return redirect(url_for('index'))
+      AddGraph(graph_name, graph_JSON)
+      return redirect(url_for('Index'))
 
     elif request.form['submit'] == 'elastic':
       graph_name = request.form['name']
@@ -142,8 +142,8 @@ def Index():
       data_generator = E.ElasticDataGenerator(client, indexes, verbose=True)
       graph = E.GetGraph(data_generator, verbose=True)
       graph_JSON = json.dumps(graph.MinimalSerialize())
-      add_graph(graph_name, graph_JSON)
-      return redirect(url_for('index'))
+      AddGraph(graph_name, graph_JSON)
+      return redirect(url_for('Index'))
 
   graphs = ListGraphs()
   return render_template('index.html', graphs=graphs)

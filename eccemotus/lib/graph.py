@@ -253,8 +253,10 @@ class Graph(object):
     """ Assign each cluster of nodes its identifier.
 
     Cluster is subgraph of has/is nodes and approximately represents one
-    machine. Identifier is an node id from this cluster. Preferably machine name
-    or machine ip address. This will reset the old cluster assignments."""
+    machine. Identifier is an node id from this cluster (cluster center).
+    Preferably machine name or machine ip address. This will reset the old
+    cluster assignments.
+    """
 
     for node in self.nodes:
       if 'cluster' in node:
@@ -265,7 +267,7 @@ class Graph(object):
       G[edge['source']].append(i)
       G[edge['target']].append(i)
 
-    def dfs(node_id, cluster_id):
+    def DFS(node_id, cluster_id):
       """Depth first search that propagates cluster_id to reachable nodes.
 
       Args:
@@ -288,13 +290,41 @@ class Graph(object):
         if edge['type'] not in [self.EDGE_HAS, self.EDGE_IS]:
           continue
 
-        dfs(edge['source'], cluster_id)
-        dfs(edge['target'], cluster_id)
+        DFS(edge['source'], cluster_id)
+        DFS(edge['target'], cluster_id)
+
+
+    def Priority(item):
+      """ Priority of node to be the center of the cluster.
+
+      Lover the priority, higher t the chance that the node will be the center
+      of cluster. This function is used as a sort key (that is the reason for
+      weird arguments.)
+
+      Args:
+        item (tuple[int, node]): node_id and actual node.
+
+      Return:
+        int: priority.
+      """
+      node = item[1]
+      PRIORITY = {
+          'machine_name': 0,
+          'ip': 1,
+          'user_name':2,
+          'user_id': 3
+      }
+      if node['type'] in PRIORITY:
+        return PRIORITY[node['type']]
+      else:
+        return 10**10
+
 
     nodes_with_ids = list(enumerate(self.nodes))
 
-    for node_id, node in nodes_with_ids:
-      dfs(node_id, node_id)
+    sorted_nodes_with_ids = sorted(nodes_with_ids, key=Priority)
+    for node_id, node in sorted_nodes_with_ids:
+      DFS(node_id, node_id)
 
 class Node(object):
   """Graph node.
