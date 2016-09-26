@@ -691,9 +691,8 @@ var LateralMap = (function() {
                         px2 = point.x + point.width / scale + pxPadding,
                         py2 = point.y + point.height / scale + pyPadding,
                         pcx = (px1 + px2) / 2,
-                        pcy = (py1 + py2) / 2;
-
-                    var dx = ncx - pcx,
+                        pcy = (py1 + py2) / 2,
+                        dx = ncx - pcx,
                         dy = ncy - pcy,
                         xSpacing = ((px2 - px1) + (nx2 - nx1)) / 2,
                         ySpacing = ((py2 - py1) + (ny2 - ny1)) / 2,

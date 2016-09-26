@@ -100,7 +100,7 @@ def AddGraph(name, graph):
 
   Args:
     name (str): graph name.
-    graph (str): duped json representation of graph.
+    graph (str): duped JSON representation of graph.
 
   Returns:
     None
@@ -111,7 +111,7 @@ def AddGraph(name, graph):
   database.commit()
 
 @app.route('/', methods=['GET', 'POST'])
-def index():
+def Index():
   """Initial html page.
 
   Contains forms for adding new graphs from elasticsearch or from file and list
@@ -127,8 +127,8 @@ def index():
       graph_name = request.form['name']
       data_generator = E.FileDataGenerator(fname, verbose=True)
       graph = E.GetGraph(data_generator, verbose=True)
-      graph_json = json.dumps(graph.MinimalSerialize())
-      add_graph(graph_name, graph_json)
+      graph_JSON = json.dumps(graph.MinimalSerialize())
+      add_graph(graph_name, graph_JSON)
       return redirect(url_for('index'))
 
     elif request.form['submit'] == 'elastic':
@@ -141,15 +141,15 @@ def index():
 
       data_generator = E.ElasticDataGenerator(client, indexes, verbose=True)
       graph = E.GetGraph(data_generator, verbose=True)
-      graph_json = json.dumps(graph.MinimalSerialize())
-      add_graph(graph_name, graph_json)
+      graph_JSON = json.dumps(graph.MinimalSerialize())
+      add_graph(graph_name, graph_JSON)
       return redirect(url_for('index'))
 
   graphs = ListGraphs()
   return render_template('index.html', graphs=graphs)
 
 
-def run(host='127.0.0.1', port=5012, database='eccemotus.sql'):
+def Run(host='127.0.0.1', port=5012, database='eccemotus.sql'):
   """Start flask app.
 
   Args:

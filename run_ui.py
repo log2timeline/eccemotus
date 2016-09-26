@@ -1,6 +1,6 @@
 """Runs web server interface for eccemotus. """
 import argparse
-from eccemotus_ui.lateral import run
+from eccemotus_ui.lateral import Run
 
 if __name__ == u'__main__':
   parser = argparse.ArgumentParser()
@@ -20,4 +20,4 @@ if __name__ == u'__main__':
       u'--database', action=u'store', default=u'eccemotus.sql', help=db_help)
 
   args = parser.parse_args()
-  run(args.host, args.port, args.database)
+  Run(args.host, args.port, args.database)

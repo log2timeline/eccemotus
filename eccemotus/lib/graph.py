@@ -249,6 +249,52 @@ class Graph(object):
     """Serializes only required data for visualization."""
     return {u'nodes': self.nodes, u'links': self.edges}
 
+  def Finalize(self):
+    """ Assign each cluster of nodes its identifier.
+
+    Cluster is subgraph of has/is nodes and approximately represents one
+    machine. Identifier is an node id from this cluster. Preferably machine name
+    or machine ip address. This will reset the old cluster assignments."""
+
+    for node in self.nodes:
+      if 'cluster' in node:
+        del node['cluster']
+
+    G = [[] for node in self.nodes]
+    for i, edge in enumerate(self.edges):
+      G[edge['source']].append(i)
+      G[edge['target']].append(i)
+
+    def dfs(node_id, cluster_id):
+      """Depth first search that propagates cluster_id to reachable nodes.
+
+      Args:
+        node_id (int): id of current node.
+        cluster_id (int): cluster id i want to assign.
+      Returns:
+        None
+
+      This follows only "has" and "is" edges.
+      """
+
+      if 'cluster' in self.nodes[node_id]:
+        # This means the node has already been visited.
+        return
+
+      self.nodes[node_id]['cluster'] = cluster_id
+
+      for edge_id in G[node_id]:
+        edge = self.edges[edge_id]
+        if edge['type'] not in [self.EDGE_HAS, self.EDGE_IS]:
+          continue
+
+        dfs(edge['source'], cluster_id)
+        dfs(edge['target'], cluster_id)
+
+    nodes_with_ids = list(enumerate(self.nodes))
+
+    for node_id, node in nodes_with_ids:
+      dfs(node_id, node_id)
 
 class Node(object):
   """Graph node.
@@ -314,4 +360,5 @@ def CreateGraph(events_data, verbose=False):
       log_message = u'Nodes:{0:d} Edges: {1:d}'
       logger.info(log_message.format(len(graph.nodes), len(graph.edges)))
 
+  graph.Finalize()
   return graph
