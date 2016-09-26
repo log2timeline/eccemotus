@@ -22,15 +22,14 @@ from __future__ import print_function
 import sys
 import json
 
-from lib.graph import CreateGraph # pylint: disable=relative-import
-from lib.parsers import ParserManager # pylint: disable=relative-import
-
-elasticsearch = None
 try:
   from elasticsearch import Elasticsearch
   from elasticsearch import helpers
 except ImportError:
   Elasticsearch = None
+
+from lib.graph import CreateGraph # pylint: disable=relative-import
+from lib.parsers import ParserManager # pylint: disable=relative-import
 
 def FileDataGenerator(filename, verbose=False):
   """Reads JSON_line file and yields events.
