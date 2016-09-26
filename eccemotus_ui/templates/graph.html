@@ -19,11 +19,8 @@
     </div>
     <script>
         var map = new LateralMap.Map();
-        $.get("{{ url_for('graph_geter', graph_id=graph.id) }}", function(data, status) {
-            console.log("api done");
-            console.log(data.graph)
-            console.log(status);
-            map.render(data.graph, "#graph")
+        $.get("{{ url_for('GetGraph', graph_id=graph.id) }}", function(data, status) {
+            map.render(data.graph, "#graph", true /* we want buttons*/)
         });
     </script>
 

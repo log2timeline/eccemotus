@@ -5,7 +5,8 @@
 <script type="text/javascript" language="javascript" src="static/d3.min.js"></script>
 <script type="text/javascript" language="javascript" src="static/lateral-map.js"></script>
 <script type="text/javascript" language="javascript" src="graph.js"></script>
-
+<!-- This html assumes, that there is an graph.js. This file contains auto
+ generated code by eccemotus.py --javascript . -->
 </head>
 
 <body>
@@ -13,9 +14,8 @@
 <svg width="1800" height="900"></svg>
 </div>
 <script>
-console.log("hello");
 var map = new LateralMap.Map();
-map.render(graph,"#graph")
+map.render(graph,"#graph", true /* we want buttons */)
 
 </script>
 </body>

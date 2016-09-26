@@ -16,29 +16,29 @@ def CreateGraph(generator, args):
   output_file = open(args.output, 'w')
 
   if args.javascript:
-    print("var graph=", end="", file=output_file)
+    print('var graph=', end='', file=output_file)
     json.dump(serialized, output_file)
-    print(";", file=output_file)
+    print(';', file=output_file)
   else:
     json.dump(serialized, output_file)
   output_file.close()
 
 
-def e2g(args):
+def ElasticToGraph(args):
   """ Computes lateral graph from data at elastic-search."""
   client = E.GetClient(args.host, args.port)
   generator = E.ElasticDataGenerator(client, args.indices, args.verbose)
   CreateGraph(generator, args)
 
 
-def f2g(args):
+def FileToGraph(args):
   """ Computes lateral graph from data at file."""
   # TODO check for errors (can not open, bad format)
 
   generator = E.FileDataGenerator(args.input, True)
   CreateGraph(generator, args)
 
-def render(args):
+def Render(args):
   """ creates a directory html visualization of graph. """
 
   directory = args.output.rstrip('/')
@@ -59,7 +59,7 @@ def render(args):
   shutil.copy(base_static + '/d3/d3.min.js', static + '/d3.min.js')
   shutil.copy(base_static + '/lateral-map.js', static + '/lateral-map.js')
 
-  print("open {0:s}".format(directory + '/index.html'))
+  print('open {0:s}'.format(directory + '/index.html'))
 
 
 if __name__ == u'__main__':
@@ -68,7 +68,7 @@ if __name__ == u'__main__':
 
   # elastic-search to graph
   sub_e2g = subparsers.add_parser(u'e2g', help=u'elastic to graph')
-  sub_e2g.set_defaults(routine=e2g)
+  sub_e2g.set_defaults(routine=ElasticToGraph)
 
   host_help = u'elastic-search ip adress (127.0.0.1)'
   sub_e2g.add_argument(
@@ -95,7 +95,7 @@ if __name__ == u'__main__':
 
 
   sub_f2g = subparsers.add_parser(u'f2g', help=u'file(s) to graph')
-  sub_f2g.set_defaults(routine=f2g)
+  sub_f2g.set_defaults(routine=FileToGraph)
 
   sub_f2g.add_argument(
       u'--javascript', action=u'store_true', help=javascript_help)
@@ -112,7 +112,7 @@ if __name__ == u'__main__':
 
   render_help = u'creates html visualization'
   sub_render = subparsers.add_parser(u'render', help=render_help)
-  sub_render.set_defaults(routine=render)
+  sub_render.set_defaults(routine=Render)
 
   input_help = u'javascript with graph (use --javascript flag with f2g or e2g)'
   sub_render.add_argument(

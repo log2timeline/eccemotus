@@ -48,7 +48,7 @@ var LateralMap = (function() {
         this.glinks = this.holder.append('g')
             .attr('class', 'links')
             .selectAll()
-            .data(graph.links)
+            .data(this.graph.links)
             .enter().append('g')
                 .attr('class', 'link')
                 .attr('id', function(d) {
@@ -109,7 +109,7 @@ var LateralMap = (function() {
         this.gnodes = this.holder.append('g')
             .attr('class', 'nodes')
             .selectAll()
-            .data(graph.nodes)
+            .data(this.graph.nodes)
             .enter()
             .append('g')
             .attr('id', function(d) {
@@ -159,7 +159,7 @@ var LateralMap = (function() {
                     var set = THAT.hasIsDfs(d);
                     // highlight links/endges that goes to/out of nodes from set
                     THAT.glinks.style('opacity', 0.1);
-                    graph.links.forEach(function(d) {
+                    THAT.graph.links.forEach(function(d) {
                         var glink = d3.select('#glink_' + d.index);
                         if(set.has(d.source.id) || set.has(d.target.id)) {
                             glink.style('opacity', 1);
@@ -300,46 +300,19 @@ var LateralMap = (function() {
         this.clusterRoutine();
     }
 
-    Map.prototype.render = function(data, element) {
-        /* Renders actual graph based on data in element. */
-        this.vars = { // variables that needs to be accessed in other methods
-            linkWidth: 4,
-            fontSize: 15,
-            textLength: 20,
-            margin: {
-                top: 50,
-                right: 75,
-                bottom: 0,
-                left: 40
-            },
-            highlighted: false
-        };
+    Map.prototype.renderButtons = function(){
         var THAT = this;
-        this.height = 1100;
-        this.width = 1200;
-        this.simulation;
-        this.element = element;
-
-        this.setData(data);
-        this.setForces();
-
-        graph = this.graph;
         var minTimestamp = 2439118792937500;
         var maxTimestamp = 0;
 
-        graph.links.forEach(function(link) {
+        this.graph.links.forEach(function(link) {
             link.events.forEach(function(e) {
                 minTimestamp = Math.min(minTimestamp, e.timestamp);
                 maxTimestamp = Math.max(maxTimestamp, e.timestamp);
             })
         })
 
-        graph.nodes.forEach(function(d) {
-            d.height = 20;
-            d.width = Math.min(THAT.vars.textLength, d.value.length) * 10 + 2;
-        });
-
-        this.timelineHolder = d3.select(element).append('p');
+        this.timelineHolder = d3.select(this.element).append('p');
 
         var fromTimeInput = this.timelineHolder.append('input')
             .attr('type', 'number')
@@ -425,6 +398,40 @@ var LateralMap = (function() {
             .text('Restart')
             .on('click', function(){THAT.simulation.restart();})
 
+    }
+
+    Map.prototype.render = function(data, element, renderButtons=false) {
+        /* Renders actual graph based on data in element. */
+        this.vars = { // variables that needs to be accessed in other methods
+            linkWidth: 4,
+            fontSize: 15,
+            textLength: 20,
+            margin: {
+                top: 50,
+                right: 75,
+                bottom: 0,
+                left: 40
+            },
+            highlighted: false
+        };
+        var THAT = this;
+        this.height = 1100;
+        this.width = 1200;
+        this.simulation;
+        this.element = element;
+
+        this.setData(data);
+        this.setForces();
+
+        this.graph.nodes.forEach(function(d) {
+            d.height = 20;
+            d.width = Math.min(THAT.vars.textLength, d.value.length) * 10 + 2;
+        });
+
+        if(renderButtons){
+            this.renderButtons();
+        }
+
         d3.select(element).select('svg').remove();
         this.svg = d3.select(element).append('svg')
             .attr('width', THAT.width)
@@ -463,12 +470,12 @@ var LateralMap = (function() {
         this.merged = new Set();
 
         // adjacency list representation of graph
-        this.G = new Array(graph.nodes.length);
-        for(var i = 0; i < graph.nodes.length; i++) {
+        this.G = new Array(this.graph.nodes.length);
+        for(var i = 0; i < this.graph.nodes.length; i++) {
             this.G[i] = new Array();
         }
-        for(var i = 0; i < graph.links.length; i++) {
-            var link = graph.links[i];
+        for(var i = 0; i < this.graph.links.length; i++) {
+            var link = this.graph.links[i];
             this.G[link.source.id].push(link);
             this.G[link.target.id].push(link);
         }

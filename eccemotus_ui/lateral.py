@@ -1,4 +1,9 @@
-""" Example usage of eccemotus.py library."""
+""" Web server interface for eccemotus.py library.
+
+This code also serves as an example usage of this library. Be aware that it
+lacks a lot of graceful error handling.
+"""
+
 from __future__ import print_function
 
 import json
@@ -11,52 +16,57 @@ app = Flask(__name__)
 
 # Routines for managing database.
 
-def get_db():
-  """Returns database object."""
-  db = getattr(g, 'database', None)
-  if db is None:
-    db = sqlite3.connect(app.config['DATABASE'])
-    db.row_factory = sqlite3.Row
-    g.database = db
-  return db
+def GetDatabase():
+  """Connect to database or reuse existing connection for this session.
+
+  Returns:
+    sqlite3.Connection: access to database.
+
+  Returns database object."""
+  database = getattr(g, 'database', None)
+  if database is None:
+    database = sqlite3.connect(app.config['DATABASE'])
+    database.row_factory = sqlite3.Row
+    g.database = database
+  return database
 
 @app.teardown_appcontext
-def close_connection(_):
+def CloseConnection(_):
   """Closes database connection if it was opened."""
-  db = getattr(g, 'database', None)
-  if db is not None:
-    db.close()
+  database = getattr(g, 'database', None)
+  if database is not None:
+    database.close()
 
 @app.route('/drop')
-def drop():
+def Drop():
   """Drops table with graphs.
 
   This can be used, if you want to "reset" your database.
   """
-  db = get_db()
-  c = db.cursor()
+  database = GetDatabase()
+  c = database.cursor()
   c.execute('''DROP TABLE IF EXISTS graphs''')
-  db.commit()
+  database.commit()
   return 'dropped'
 
 @app.route('/prepare')
-def prepare():
-  """Creates table for graphs is database."""
-  db = get_db()
-  c = db.cursor()
+def Prepare():
+  """Creates table for graphs in database."""
+  database = GetDatabase()
+  c = database.cursor()
   c.execute('''CREATE TABLE IF NOT EXISTS graphs
       (id INTEGER PRIMARY KEY, name TEXT, graph BLOB )''')
-  db.commit()
+  database.commit()
   return 'prepared'
 
 @app.route('/graph/<graph_id>')
-def graph_viewer(graph_id):
-  """Returns html for specific graph.
+def ViewGraph(graph_id):
+  """Returns view for specific graph.
 
-  Actual graph data is fetched with javascript and call to graph_geter.
+  Actual graph data is fetched with javascript and call to GetGraph.
   """
-  db = get_db()
-  c = db.cursor()
+  database = GetDatabase()
+  c = database.cursor()
   c.execute('SELECT id, name from graphs where id = ?', (graph_id, ))
   graphs = c.fetchall()
   if len(graphs) != 1:
@@ -66,10 +76,10 @@ def graph_viewer(graph_id):
 
 
 @app.route('/api/graph/<graph_id>')
-def graph_geter(graph_id):
+def GetGraph(graph_id):
   """Returns graph data for graph with graph_id. """
-  db = get_db()
-  c = db.cursor()
+  database = GetDatabase()
+  c = database.cursor()
   c.execute('SELECT id, name, graph from graphs where id = ?', (graph_id, ))
   graph = c.fetchall()
   if len(graph) != 1:
@@ -77,21 +87,28 @@ def graph_geter(graph_id):
 
   return jsonify(graph=json.loads(graph[0]['graph']))
 
-
-def list_graphs():
+def ListGraphs():
   """Returns list of graphs in database."""
-  db = get_db()
-  c = db.cursor()
+  database = GetDatabase()
+  c = database.cursor()
   c.execute('SELECT id, name from graphs')
   data = c.fetchall()
   return data
 
-def add_graph(name, graph):
-  """ Routine for adding graph data to database."""
-  db = get_db()
-  c = db.cursor()
+def AddGraph(name, graph):
+  """ Routine for adding graph data to database.
+
+  Args:
+    name (str): graph name.
+    graph (str): duped json representation of graph.
+
+  Returns:
+    None
+  """
+  database = GetDatabase()
+  c = database.cursor()
   c.execute('INSERT INTO graphs (name, graph) VALUES (?,?)', (name, graph))
-  db.commit()
+  database.commit()
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -128,14 +145,25 @@ def index():
       add_graph(graph_name, graph_json)
       return redirect(url_for('index'))
 
-  graphs = list_graphs()
+  graphs = ListGraphs()
   return render_template('index.html', graphs=graphs)
 
 
-def run(host=u'127.0.0.1', port=5012, database='eccemotus.sql'):
-  """Start flask app. """
+def run(host='127.0.0.1', port=5012, database='eccemotus.sql'):
+  """Start flask app.
+
+  Args:
+    host (str): flask app ip address.
+    port (int): port for the flask app.
+    database (str): name for sqlite3 database you want to use. If it does not
+        exist, if will be created.
+
+  Returns:
+    None
+
+  """
   app.config['DATABASE'] = database
   with app.app_context():
-    prepare()
+    Prepare()
   app.run(debug=True, host=host, port=port)
 
