@@ -1,19 +1,20 @@
+# -*- coding: utf-8 -*-
 """ Provides basic methods for storing lateral movement logs in property Graph.
 
-For Default use-case, call create_graph(data).minimal_serialize().
+For default use-case, call CreateGraph(data).MinimalSerialize().
 This returns json representation of property graph. This can be directly send to
 javascript visualization.
 """
 
 from __future__ import print_function
-from collections import defaultdict as dfd
+from collections import defaultdict
 import sys
 
 import eccemotus.lib.parsers as P
 
 
 class Graph(object):
-  """Very light-weighed implementation of property graph.
+  """Very light-weight implementation of property graph.
 
     This implementation is not meant to be a general property graph.
     It is meant for storing information about lateral movement.
@@ -54,15 +55,46 @@ class Graph(object):
 
     """
 
+  # Edge types.
+  EDGE_HAS = "has"
+  EDGE_IS = "is"
+  EDGE_ACCEESS = "access"
+
+  # Rules describing which pairs of information should create which type of
+  # edge.
+  RULES = [
+      (P.SOURCE_MACHINE_IP, P.SOURCE_MACHINE_NAME, EDGE_IS),
+      (P.SOURCE_USER_NAME, P.SOURCE_USER_ID, EDGE_IS),
+      (P.TARGET_MACHINE_NAME, P.TARGET_MACHINE_IP, EDGE_IS),
+      (P.TARGET_USER_NAME, P.TARGET_USER_ID, EDGE_IS),
+      (P.SOURCE_MACHINE_IP, P.SOURCE_USER_NAME, EDGE_HAS),
+      (P.SOURCE_MACHINE_IP, P.SOURCE_USER_ID, EDGE_HAS),
+      (P.SOURCE_MACHINE_NAME, P.SOURCE_USER_NAME, EDGE_HAS),
+      (P.SOURCE_MACHINE_NAME, P.SOURCE_USER_ID, EDGE_HAS),
+      (P.TARGET_MACHINE_IP, P.TARGET_USER_NAME, EDGE_HAS),
+      (P.TARGET_MACHINE_IP, P.TARGET_USER_ID, EDGE_HAS),
+      (P.TARGET_MACHINE_NAME, P.TARGET_USER_NAME, EDGE_HAS),
+      (P.TARGET_MACHINE_NAME, P.TARGET_USER_ID, EDGE_HAS),
+  ]
+
   def __init__(self):
     """Initialize empty graph."""
     self.edges = []
-    self.edges_ids = dfd(int)  # Provides fast index for edges
+    self.edges_ids = defaultdict(int)  # Provides fast index for edges
     self.nodes = []
-    self.nodes_ids = dfd(int)  # Provides fast index for nodes
+    self.nodes_ids = defaultdict(int)  # Provides fast index for nodes
 
-  def get_add_node(self, node_type, node_value):
-    """Return node's id or create a new one if it does not exist."""
+  def GetAddNode(self, node_type, node_value):
+    """Return node's id or create a new one if it does not exist.
+
+      Args:
+        node_type (str): type of node derived from information names at
+            parser.py
+        node_value (str): value of the node.
+      Returns:
+        int: identifier of node. This is a position of node in self.nodes.
+
+    """
 
     node = (node_type, node_value)
     if node not in self.nodes_ids:
@@ -75,13 +107,19 @@ class Graph(object):
 
     return self.nodes_ids[node]
 
-  def add_edge(self,
-               source_id,
-               target_id,
-               edge_type,
-               timestamp=None,
-               event_id=None):
-    """Add new edge to graph or just add new event to existing edge."""
+  def AddEdge(
+      self, source_id, target_id, edge_type, timestamp=None, event_id=None):
+    """Add new edge to graph or just add new event to existing edge.
+
+    Args:
+      edge_type (str):
+      event_id (int|str): identifier for event responsible for this edge.
+      source_id (int): id of source node.
+      target_id (int): id of target node.
+      timestamp (int): timestamp when event happened.
+    Returns:
+      None
+    """
 
     edge = (source_id, target_id, edge_type)
     if edge in self.edges_ids:
@@ -100,28 +138,22 @@ class Graph(object):
                        "timestamp": timestamp})],
       })
 
-  EDGE_HAS = "has"
-  EDGE_IS = "is"
-  EDGE_ACCEESS = "access"
-  SIMPLE_RULES = [
-      (P.SOURCE_MACHINE_IP, P.SOURCE_MACHINE_NAME, EDGE_IS),
-      (P.SOURCE_USER_NAME, P.SOURCE_USER_ID, EDGE_IS),
-      (P.TARGET_MACHINE_NAME, P.TARGET_MACHINE_IP, EDGE_IS),
-      (P.TARGET_USER_NAME, P.TARGET_USER_ID, EDGE_IS),
-      (P.SOURCE_MACHINE_IP, P.SOURCE_USER_NAME, EDGE_HAS),
-      (P.SOURCE_MACHINE_IP, P.SOURCE_USER_ID, EDGE_HAS),
-      (P.SOURCE_MACHINE_NAME, P.SOURCE_USER_NAME, EDGE_HAS),
-      (P.SOURCE_MACHINE_NAME, P.SOURCE_USER_ID, EDGE_HAS),
-      (P.TARGET_MACHINE_IP, P.TARGET_USER_NAME, EDGE_HAS),
-      (P.TARGET_MACHINE_IP, P.TARGET_USER_ID, EDGE_HAS),
-      (P.TARGET_MACHINE_NAME, P.TARGET_USER_NAME, EDGE_HAS),
-      (P.TARGET_MACHINE_NAME, P.TARGET_USER_ID, EDGE_HAS),
+  def GetSshSource(self, event):
+    """ Return most specific ssh_source.
 
-      #(P.TARGET_PLASO, P.TARGET_MACHINE_NAME, EDGE_IS),
-  ]
+    Knowing that the ssh was from user Dean is better than knowing only the ip
+    address.
+    Note that user name and user id is extended by machine identifier.
 
-  def get_ssh_source(self, event):
-    """ Return best most specific ssh_source."""
+    Args:
+      event (dict[str, str]): event information values indexed by their
+          information names.
+
+    Returns:
+      tuple: containing:
+        str|None: type of most specific source. None if no source is present.
+        str|None: value of most specific source. None if no source is present.
+    """
 
     # List of things that should be used as ssh source in decreasing priority.
     SSH_SOURCE = [P.SOURCE_USER_NAME, P.SOURCE_USER_ID, P.SOURCE_MACHINE_NAME,
@@ -131,8 +163,22 @@ class Graph(object):
         return key, event[key]
     return None, None
 
-  def get_ssh_target(self, event):
-    """ Return best most specific ssh_target."""
+  def GetSshTarget(self, event):
+    """ Return best most specific ssh_target.
+
+    Knowing that the ssh was to user Dean is better than knowing only the ip
+    address.
+    Note that user name and user id is extended by machine identifier.
+
+    Args:
+      event (dict[str, str]): event information values indexed by their
+          information names.
+
+    Returns:
+      tuple: containing:
+        str|None: type of most specific target. None if no target is present.
+        str|None: value of most specific target. None if no target is present.
+    """
 
     # List of things that should be used as ssh target in decreasing priority.
     SSH_TARGET = [P.TARGET_USER_NAME, P.TARGET_USER_ID, P.TARGET_MACHINE_NAME,
@@ -142,25 +188,47 @@ class Graph(object):
         return key, event[key]
     return None, None
 
-  def add_data(self, source_type, source_value, target_type, target_value,
-               edge_type, event_time, event_id):
-    """Add edge with corresponding nodes to graph."""
+  def AddData(
+      self, source_type, source_value, target_type, target_value, edge_type,
+      event_time, event_id):
+    """Add edge with corresponding nodes to graph.
 
-    source_id = self.get_add_node(P.get_type(source_type), source_value)
-    target_id = self.get_add_node(P.get_type(target_type), target_value)
-    self.add_edge(source_id, target_id, edge_type, event_time, event_id)
+    Args:
+      edge_type (str): edge type.
+      event_id (int|str): event identifier.
+      event_time (str): timestamp for event.
+      source_type (str): type of source node.
+      source_value (str): value of source node.
+      target_type (str): type of target node.
+      target_value (str): value of target node.
 
-  def add_event(self, event):
+    Returns:
+      None
+    """
+
+    source_id = self.GetAddNode(P.get_type(source_type), source_value)
+    target_id = self.GetAddNode(P.get_type(target_type), target_value)
+    self.AddEdge(source_id, target_id, edge_type, event_time, event_id)
+
+  def AddEvent(self, event):
     """ Processes one parsed event and encodes it to edges and nodes.
 
-        Encoding is based on simple rules. (source, target, edge_type).
-        source and target are almost (prefix "source:"/"target:" must be
-        removed) types of new nodes. They are also keys to event dictionary
-        which provides value for a given node.
-        """
+    Encoding is based on simple rules. (source, target, edge_type). source and
+    target are almost (prefix "source:"/"target:" must be removed) types of new
+    nodes. They are also keys to event dictionary which provides value for
+    a given node.
+
+    Args:
+      event (dict[str, str]): parsed event. Result of ParserManager.parse()
+          from parsers.py.
+
+    Returns:
+      None
+
+    """
 
     #Simple rules for ownership and identity
-    for rule in self.__class__.SIMPLE_RULES:
+    for rule in self.__class__.RULES:
       # Removing target:/source: prefix
       source_value = event.get(rule[0])
 
@@ -168,39 +236,39 @@ class Graph(object):
       if not (source_value and target_value):
         continue
 
-      self.add_data(rule[0], source_value, rule[1], target_value, rule[2],
+      self.AddData(rule[0], source_value, rule[1], target_value, rule[2],
                     event[P.TIMESTAMP], event[P.EVENT_ID])
 
     #Rules for access edge
 
-    ssh_source_type, ssh_source_value = self.get_ssh_source(event)
-    ssh_target_type, ssh_target_value = self.get_ssh_target(event)
+    ssh_source_type, ssh_source_value = self.GetSshSource(event)
+    ssh_target_type, ssh_target_value = self.GetSshTarget(event)
     if ssh_source_value and ssh_target_value:
-      self.add_data(ssh_source_type, ssh_source_value, ssh_target_type,
+      self.AddData(ssh_source_type, ssh_source_value, ssh_target_type,
                     ssh_target_value, self.__class__.EDGE_ACCEESS,
                     event[P.TIMESTAMP], event[P.EVENT_ID])
 
-  def minimal_serialize(self):
+  def MinimalSerialize(self):
     """Serialized only required information for visualization."""
     return {"nodes": self.nodes, "links": self.edges}
 
 
-def create_graph(data, verbose=False):
+def CreateGraph(data, verbose=False):
   """Creates graph from data.
 
   Args:
-    data (iterable): parsed plaso events.
+    data (iterable): parsed plaso events. data can be any iterable (list),
+        preferably generator, because of memory optimization.
 
   Returns:
     Graph: property graph for events.
 
-  data can be any iterable (list), but preferably generator, because of memory
-  optimization.
   """
   graph = Graph()
+  VERBOSE_INTERVAL = 1000
   for i, event in enumerate(data):
     graph.add_event(event)
-    if not i % 1000 and verbose:
+    if not i % VERBOSE_INTERVAL and verbose:
       print(
           "Nodes:%d Edges: %d" % (len(graph.nodes), len(graph.edges)),
           file=sys.stderr)

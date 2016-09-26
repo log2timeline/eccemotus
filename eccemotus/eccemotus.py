@@ -1,38 +1,48 @@
 """Front-end for working with lateral graph.
 
 This can be used as a command line tool and as a library as well.
-First step is to create a data generator (file_data_generator or
-elastic_data_generator), depending of where you want to get plaso events from.
+First step is to create a data generator (FileDataGenerator or
+ElasticDataGenerator), depending of where you want to get plaso events from.
 
-file_data_generator:
-  Reads json_line file and yield one event at a time. It has to read the whole
-  file, but has no memory requirements.
+FileDataGenerator:
+  Reads JSON_line file and yield one event at a time. It has to read the whole
+  file, but has smaller memory requirements.
 
-elastic_data_generator:
+ElasticDataGenerator:
   Queries elasticsearch for events that it can parse. Also no memory
   requirements. Does not need to read all logs, but must wait for elasticsearch.
 
-Than you have to parse the data with parsed_data_generator(data_generator).
+Then you have to parse the data with ParsedDataGenerator(data_generator).
 
-Last think you want to do is to call get_graph_json(parsed_data_generator)
+Last thing you want to do is to call GetGraphJSON(ParsedDataGenerator)
 to create the actual graph.
 """
-#TODO this will have its own command line interface.
 
 from __future__ import print_function
 import sys
 import json
 
-# How should dhose imports look like to not break run_tests.py ?
-from lib.grapher import create_graph # pylint: disable=relative-import
+from lib.grapher import CreateGraph # pylint: disable=relative-import
 from lib.parsers import ParserManager # pylint: disable=relative-import
 
+elasticsearch = None
+try:
+  from elasticsearch import Elasticsearch
+  from elasticsearch import helpers
+except ImportError:
+  Elasticsearch = None
 
-def file_data_generator(filename, verbose=False):
-  """Reads json_line file and yields events.
+def FileDataGenerator(filename, verbose=False):
+  """Reads JSON_line file and yields events.
 
-    Json_line means, that every event is a json on a separate line.
-    """
+  JSON_line file means, that every event is a JSON on a separate line.
+
+  Args:
+    filename (str): name of file with events in JSON_line format.
+  Yields:
+    dict: event.
+
+  """
   input_file = open(filename)
   for i, line in enumerate(input_file):
     if not i % 100000 and verbose:
@@ -40,21 +50,23 @@ def file_data_generator(filename, verbose=False):
     yield json.loads(line)
 
 
-def elastic_data_generator(client, indexes, verbose=False):
+def ElasticDataGenerator(client, indexes, verbose=False):
   """Reads event data from elasticsearch.
 
-    Args:
-        client: Elasticsearch client.
-        indexes: List of elasticsearch indexes.
-        verbose: If True, prints progress.
+  Uses scan function, so the data is really processed like a stream.
 
-    Yield:
-        plaso event.
+  Args:
+    client (Elasticsearch): elasticsearch client.
+    indexes (list[str]): elasticsearch indexes.
+    verbose (bool): control for verbosity.
 
+  Yields:
+    json representation of plaso event.
 
-    Uses scan function, so the data is really processed like a stream.
-    """
-  from elasticsearch.helpers import scan  #TODO add try except
+  """
+
+  if Elasticsearch is None:
+    raise ImportError("Please install elasticsearch to use this functionality.")
 
   # Generating term filter for data_types, that we can parse
   should = [{"term": {"data_type": data_type}}
@@ -73,31 +85,46 @@ def elastic_data_generator(client, indexes, verbose=False):
           }
       }
   }
+  VERBOSE_INTERVAL = 10000
+  results = helpers.scan(client, query=query, index=indexes)
+  for i, response in enumerate(results):
+    if not i % VERBOSE_INTERVAL and verbose:
+      print("Elastic records ", i, file=sys.stderr)
 
-  # this is a bug at elasticsearch.py, because it can not handle elastic errors
-  # properly. it is sad :'(
-  try:  #TODO(vlejd) fix this.
-    for i, response in enumerate(scan(client, query=query, index=indexes)):
-      if not i % 10000 and verbose:
-        print("Elastic records ", i, file=sys.stderr)
-
-      event = response['_source']
-      event["timesketch_id"] = response["_id"]
-      yield event
-  except Exception as e: # pylint: disable=broad-except
-    _ = e
-    return
+    event = response['_source']
+    event["timesketch_id"] = response["_id"]
+    yield event
 
 
-def get_client(host, port):
-  """ Returns elasticsearch client for given port and host address."""
-  from elasticsearch import Elasticsearch  #TODO add try except
+def GetClient(host, port):
+  """ Returns elasticsearch client.
+
+  Args:
+    host (str): ip address.
+    port (int): port number.
+
+  Returns:
+    Elasticsearch: elasticsearch client.
+
+  """
+  if Elasticsearch is None:
+    raise ImportError("Please install elasticsearch to use this functionality.")
+
   client = Elasticsearch([{u'host': host, u'port': port}])
   return client
 
 
-def parsed_data_generator(raw_generator):
-  """Transform raw event generator to parsed events generator."""
+def ParsedDataGenerator(raw_generator):
+  """Transform raw event generator to parsed events generator.
+
+  Args:
+    raw_generator (iterable[dict]): Plaso events.
+
+  Yields:
+    dict: parsed Plaso events.
+
+
+  """
   for raw_event in raw_generator:
     if not raw_event:
       continue
@@ -106,17 +133,15 @@ def parsed_data_generator(raw_generator):
       yield parsed
 
 
-def get_graph(raw_generator, verbose=False):
-  """ Create graph from raw data."""
-  parsed_generator = parsed_data_generator(raw_generator)
-  graph = create_graph(parsed_generator, verbose)
+def GetGraph(raw_generator, verbose=False):
+  """ Create graph from raw data.
+  Args:
+    raw_generator (tierable[dict]): plaso events
+
+  Returns:
+    Graph: graph created based on events.
+
+  """
+  parsed_generator = ParsedDataGenerator(raw_generator)
+  graph = CreateGraph(parsed_generator, verbose)
   return graph
-
-
-def get_graph_json(raw_generator, verbose=False):
-  """ Returns json representation for graph created based on raw_generator."""
-
-  graph = get_graph(raw_generator, verbose=verbose)
-  graph_json = json.dumps(graph.minimal_serialize())
-  return graph_json
-
