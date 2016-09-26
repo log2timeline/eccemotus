@@ -61,6 +61,7 @@ class GrapherTest(unittest.TestCase):
     self.assertEqual(len(graph.edges), 3)
 
   def test_CreateGraph(self):
+    """Test CreateGraph."""
     event = {
         P.EVENT_ID: 1,
         P.SOURCE_MACHINE_IP: '192.168.1.11',
@@ -72,3 +73,5 @@ class GrapherTest(unittest.TestCase):
         P.TIMESTAMP: 1441559606244560}
     events = [event]
     graph = G.CreateGraph(events)
+    self.assertEqual(len(graph.nodes), 4)
+    self.assertEqual(len(graph.edges), 3)

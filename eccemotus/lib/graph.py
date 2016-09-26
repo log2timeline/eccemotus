@@ -237,7 +237,7 @@ class Graph(object):
         continue
 
       self.AddData(rule[0], source_value, rule[1], target_value, rule[2],
-                    event[P.TIMESTAMP], event[P.EVENT_ID])
+                   event[P.TIMESTAMP], event[P.EVENT_ID])
 
     #Rules for access edge
 
@@ -245,8 +245,8 @@ class Graph(object):
     ssh_target_type, ssh_target_value = self.GetSshTarget(event)
     if ssh_source_value and ssh_target_value:
       self.AddData(ssh_source_type, ssh_source_value, ssh_target_type,
-                    ssh_target_value, self.__class__.EDGE_ACCEESS,
-                    event[P.TIMESTAMP], event[P.EVENT_ID])
+                   ssh_target_value, self.__class__.EDGE_ACCEESS,
+                   event[P.TIMESTAMP], event[P.EVENT_ID])
 
   def MinimalSerialize(self):
     """Serialized only required information for visualization."""
