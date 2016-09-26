@@ -108,9 +108,10 @@ def index():
     if request.form['submit'] == 'file':
       fname = request.form['filename']
       graph_name = request.form['name']
-      data_generator = E.file_data_generator(fname, verbose=True)
-      graph = E.get_graph_json(data_generator, verbose=True)
-      add_graph(graph_name, graph)
+      data_generator = E.FileDataGenerator(fname, verbose=True)
+      graph = E.GetGraph(data_generator, verbose=True)
+      graph_json = json.dumps(graph.MinimalSerialize())
+      add_graph(graph_name, graph_json)
       return redirect(url_for('index'))
 
     elif request.form['submit'] == 'elastic':
@@ -119,11 +120,12 @@ def index():
       port = int(request.form['port'])
       raw_indexes = request.form['indexes'].replace('\n', ' ')
       indexes = [el_index for el_index in raw_indexes.split() if el_index]
-      client = E.get_client(ip, port)
+      client = E.GetClient(ip, port)
 
-      data_generator = E.elastic_data_generator(client, indexes, verbose=True)
-      graph = E.get_graph_json(data_generator, verbose=True)
-      add_graph(graph_name, graph)
+      data_generator = E.ElasticDataGenerator(client, indexes, verbose=True)
+      graph = E.GetGraph(data_generator, verbose=True)
+      graph_json = json.dumps(graph.MinimalSerialize())
+      add_graph(graph_name, graph_json)
       return redirect(url_for('index'))
 
   graphs = list_graphs()

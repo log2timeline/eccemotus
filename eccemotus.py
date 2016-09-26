@@ -8,10 +8,10 @@ import shutil
 import eccemotus.eccemotus as E #pylint: disable=no-name-in-module
 # TODO fix problem with import
 
-def create_graph(generator, args):
+def CreateGraph(generator, args):
   """ Handles creating and saving graph from data generator. """
-  graph = E.get_graph(generator, args.verbose)
-  serialized = graph.minimal_serialize()
+  graph = E.GetGraph(generator, args.verbose)
+  serialized = graph.MinimalSerialize()
 
   output_file = open(args.output, 'w')
 
@@ -26,17 +26,17 @@ def create_graph(generator, args):
 
 def e2g(args):
   """ Computes lateral graph from data at elastic-search."""
-  client = E.get_client(args.host, args.port)
-  generator = E.elastic_data_generator(client, args.indices, args.verbose)
-  create_graph(generator, args)
+  client = E.GetClient(args.host, args.port)
+  generator = E.ElasticDataGenerator(client, args.indices, args.verbose)
+  CreateGraph(generator, args)
 
 
 def f2g(args):
   """ Computes lateral graph from data at file."""
   # TODO check for errors (can not open, bad format)
 
-  generator = E.file_data_generator(args.input, True)
-  create_graph(generator, args)
+  generator = E.FileDataGenerator(args.input, True)
+  CreateGraph(generator, args)
 
 def render(args):
   """ creates a directory html visualization of graph. """
