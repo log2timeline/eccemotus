@@ -267,7 +267,7 @@ def CreateGraph(data, verbose=False):
   graph = Graph()
   VERBOSE_INTERVAL = 1000
   for i, event in enumerate(data):
-    graph.add_event(event)
+    graph.AddEvent(event)
     if not i % VERBOSE_INTERVAL and verbose:
       print(
           "Nodes:%d Edges: %d" % (len(graph.nodes), len(graph.edges)),

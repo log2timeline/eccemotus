@@ -5,7 +5,7 @@ import eccemotus.lib.parsers as P
 
 #TODO(vlejd) add more tests after lib/graph.py is reviewed.
 class GrapherTest(unittest.TestCase):
-  """Test ParserManager """
+  """Test ParserManager."""
   def test_init(self):
     """Test graph initialization."""
     graph = G.Graph()
@@ -43,6 +43,7 @@ class GrapherTest(unittest.TestCase):
     self.assertEqual(len(graph.nodes_ids), 2)
 
   def test_AddEvent(self):
+    """Test AddEvent."""
     graph = G.Graph()
     event = {
         P.EVENT_ID: 1,
@@ -59,3 +60,15 @@ class GrapherTest(unittest.TestCase):
     self.assertEqual(len(graph.nodes), 4)
     self.assertEqual(len(graph.edges), 3)
 
+  def test_CreateGraph(self):
+    event = {
+        P.EVENT_ID: 1,
+        P.SOURCE_MACHINE_IP: '192.168.1.11',
+        P.SOURCE_MACHINE_NAME: '192.168.1.11',
+        P.TARGET_USER_NAME: 'dean@acserver',
+        P.TARGET_MACHINE_NAME: 'acserver',
+        P.TARGET_PLASO:
+        'acserver.dd/images/work/vlejd/home/google/local/usr/',
+        P.TIMESTAMP: 1441559606244560}
+    events = [event]
+    graph = G.CreateGraph(events)
