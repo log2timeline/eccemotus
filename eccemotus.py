@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Command line interface for eccemotus. """
 
 from __future__ import print_function
@@ -5,61 +6,58 @@ import argparse
 import json
 import os
 import shutil
-import eccemotus.eccemotus as E #pylint: disable=no-name-in-module
-# TODO fix problem with import
+import eccemotus.eccemotus as E  # pylint: disable=no-name-in-module
+
 
 def CreateGraph(generator, args):
-  """ Handles creating and saving graph from data generator. """
+  """Handles creating and saving graph from data generator."""
   graph = E.GetGraph(generator, args.verbose)
   serialized = graph.MinimalSerialize()
 
-  output_file = open(args.output, 'w')
-
-  if args.javascript:
-    print('var graph=', end='', file=output_file)
-    json.dump(serialized, output_file)
-    print(';', file=output_file)
-  else:
-    json.dump(serialized, output_file)
-  output_file.close()
+  with open(args.output, u'w') as output_file:
+    if args.javascript:
+      print(u'var graph=', end='', file=output_file)
+      json.dump(serialized, output_file)
+      print(u';', file=output_file)
+    else:
+      json.dump(serialized, output_file)
 
 
 def ElasticToGraph(args):
-  """ Computes lateral graph from data at elastic-search."""
+  """Computes lateral graph from data at elastic-search."""
   client = E.GetClient(args.host, args.port)
   generator = E.ElasticDataGenerator(client, args.indices, args.verbose)
   CreateGraph(generator, args)
 
 
 def FileToGraph(args):
-  """ Computes lateral graph from data at file."""
-  # TODO check for errors (can not open, bad format)
-
+  """Computes lateral graph from data at file."""
   generator = E.FileDataGenerator(args.input, True)
   CreateGraph(generator, args)
 
-def Render(args):
-  """ creates a directory html visualization of graph. """
 
-  directory = args.output.rstrip('/')
+def Render(args):
+  """Creates a directory html visualization of graph."""
+
+  directory = args.output.rstrip(u'/')
   base = os.path.dirname(os.path.abspath(__file__))
-  base = os.path.join(base, 'eccemotus_ui')
+  base = os.path.join(base, u'eccemotus_ui')
 
   if not os.path.exists(args.output):
     os.makedirs(args.output)
 
-  shutil.copy(args.input, directory + '/graph.js')
-  shutil.copy(base + '/templates/dirty_index.html', directory + '/index.html')
+  shutil.copy(args.input, directory + u'/graph.js')
+  shutil.copy(base + u'/templates/dirty_index.html', directory + u'/index.html')
 
-  base_static = base + '/static'
-  static = directory +'/static'
+  base_static = base + u'/static'
+  static = directory +u'/static'
   if not os.path.exists(static):
     os.makedirs(static)
 
-  shutil.copy(base_static + '/d3/d3.min.js', static + '/d3.min.js')
-  shutil.copy(base_static + '/lateral-map.js', static + '/lateral-map.js')
+  shutil.copy(base_static + u'/d3/d3.min.js', static + u'/d3.min.js')
+  shutil.copy(base_static + u'/lateral-map.js', static + u'/lateral-map.js')
 
-  print('open {0:s}'.format(directory + '/index.html'))
+  print(u'open {0:s}'.format(directory + u'/index.html'))
 
 
 if __name__ == u'__main__':
@@ -81,9 +79,8 @@ if __name__ == u'__main__':
   sub_e2g.add_argument(
       u'--javascript', action=u'store_true', help=javascript_help)
 
-  verbose_help = 'print progress'
-  sub_e2g.add_argument(
-      u'--verbose', action=u'store_true', help=verbose_help)
+  verbose_help = u'print progress'
+  sub_e2g.add_argument(u'--verbose', action=u'store_true', help=verbose_help)
 
   output_help = u'output file name'
   sub_e2g.add_argument(
@@ -100,26 +97,22 @@ if __name__ == u'__main__':
   sub_f2g.add_argument(
       u'--javascript', action=u'store_true', help=javascript_help)
 
-  sub_f2g.add_argument(
-      u'--verbose', action=u'store_true', help=verbose_help)
+  sub_f2g.add_argument(u'--verbose', action=u'store_true', help=verbose_help)
 
   input_help = u'input file in json_line format'
-  sub_f2g.add_argument(
-      u'input', action=u'store', help=input_help)
+  sub_f2g.add_argument(u'input', action=u'store', help=input_help)
 
-  sub_f2g.add_argument(
-      u'output', action=u'store', help=output_help)
+  sub_f2g.add_argument(u'output', action=u'store', help=output_help)
 
   render_help = u'creates html visualization'
   sub_render = subparsers.add_parser(u'render', help=render_help)
   sub_render.set_defaults(routine=Render)
 
   input_help = u'javascript with graph (use --javascript flag with f2g or e2g)'
-  sub_render.add_argument(
-      u'input', action=u'store', help=input_help)
+  sub_render.add_argument(u'input', action=u'store', help=input_help)
 
-  sub_render.add_argument(
-      u'output', action=u'store', help=u'directory to store visualization')
+  render_help = u'directory to store visualization'
+  sub_render.add_argument(u'output', action=u'store', help=render_help)
 
 
   parsed_args = parser.parse_args()

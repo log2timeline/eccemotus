@@ -1,4 +1,5 @@
-"""Runs web server interface for eccemotus. """
+# -*- coding: utf-8 -*-
+"""Runs web server interface for eccemotus."""
 import argparse
 from eccemotus_ui.lateral import Run
 
