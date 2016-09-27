@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Front-end for working with lateral graph.
 
 This can be used as a command line tool and as a library as well.
@@ -28,8 +29,8 @@ try:
 except ImportError:
   Elasticsearch = None
 
-from lib.graph import CreateGraph # pylint: disable=relative-import
-from lib.parsers import ParserManager # pylint: disable=relative-import
+import lib.graph as G # pylint: disable=relative-import
+import lib.parsers as P # pylint: disable=relative-import
 
 def FileDataGenerator(filename, verbose=False):
   """Reads JSON_line file and yields events.
@@ -38,15 +39,15 @@ def FileDataGenerator(filename, verbose=False):
 
   Args:
     filename (str): name of file with events in JSON_line format.
+
   Yields:
     dict: event.
-
   """
-  input_file = open(filename)
-  for i, line in enumerate(input_file):
-    if not i % 100000 and verbose:
-      print("File line ", i, file=sys.stderr)
-    yield json.loads(line)
+  with open(filename, u'r') as input_file:
+    for i, line in enumerate(input_file):
+      if not i % 100000 and verbose:
+        print(u'File line ', i, file=sys.stderr)
+      yield json.loads(line)
 
 
 def ElasticDataGenerator(client, indexes, verbose=False):
@@ -60,25 +61,25 @@ def ElasticDataGenerator(client, indexes, verbose=False):
     verbose (bool): control for verbosity.
 
   Yields:
-    json representation of plaso event.
-
+    dict: json representation of plaso event.
   """
 
   if Elasticsearch is None:
-    raise ImportError("Please install elasticsearch to use this functionality.")
+    raise ImportError((u'Please install elasticsearch to use this'
+                       u'functionality.'))
 
-  # Generating term filter for data_types, that we can parse
-  should = [{"term": {"data_type": data_type}}
-            for data_type in ParserManager.get_parsed_types()]
+  # Generating term filter for data_types, that we can parse.
+  should = [{u'term': {u'data_type': data_type}}
+            for data_type in P.ParserManager.GetParsedTypes()]
 
   # Elasticsearch query.
   query = {
-      "query": {
-          "filtered": {
-              "query": {"match_all": {}},
-              "filter": {
-                  "bool": {
-                      "should": should,
+      u'query': {
+          u'filtered': {
+              u'query': {u'match_all': {}},
+              u'filter': {
+                  u'bool': {
+                      u'should': should,
                   }
               }
           }
@@ -88,15 +89,15 @@ def ElasticDataGenerator(client, indexes, verbose=False):
   results = helpers.scan(client, query=query, index=indexes)
   for i, response in enumerate(results):
     if not i % VERBOSE_INTERVAL and verbose:
-      print("Elastic records ", i, file=sys.stderr)
+      print(u'Elastic records ', i, file=sys.stderr)
 
     event = response['_source']
-    event["timesketch_id"] = response["_id"]
+    event[u'timesketch_id'] = response[u'_id']
     yield event
 
 
 def GetClient(host, port):
-  """ Returns elasticsearch client.
+  """creates elasticsearch client.
 
   Args:
     host (str): ip address.
@@ -104,10 +105,10 @@ def GetClient(host, port):
 
   Returns:
     Elasticsearch: elasticsearch client.
-
   """
   if Elasticsearch is None:
-    raise ImportError("Please install elasticsearch to use this functionality.")
+    raise ImportError((u'Please install elasticsearch to use this '
+                       u'functionality.'))
 
   client = Elasticsearch([{u'host': host, u'port': port}])
   return client
@@ -121,26 +122,23 @@ def ParsedDataGenerator(raw_generator):
 
   Yields:
     dict: parsed Plaso events.
-
-
   """
   for raw_event in raw_generator:
     if not raw_event:
       continue
-    parsed = ParserManager.parse(raw_event)
+    parsed = P.ParserManager.Parse(raw_event)
     if parsed:
       yield parsed
 
 
 def GetGraph(raw_generator, verbose=False):
-  """ Create graph from raw data.
+  """Create graph from raw data.
   Args:
-    raw_generator (tierable[dict]): plaso events
+    raw_generator (iterable[dict]): plaso events
 
   Returns:
     Graph: graph created based on events.
-
   """
   parsed_generator = ParsedDataGenerator(raw_generator)
-  graph = CreateGraph(parsed_generator, verbose)
+  graph = G.CreateGraph(parsed_generator, verbose)
   return graph

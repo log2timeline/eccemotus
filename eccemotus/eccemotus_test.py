@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Tests for eccemotus.py"""
 
 import unittest
@@ -5,7 +6,7 @@ import unittest
 class EccemotusTest(unittest.TestCase):
   """Test eccemotus."""
 
-  def test_import(self):
+  def test_Import(self):
     """TODO """
     pass
 
