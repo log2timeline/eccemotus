@@ -16,30 +16,23 @@ class GrapherTest(unittest.TestCase):
 
   def test_GetAddNode(self):
     """Test GetAddNode method."""
-    def NodeTuplteToDict(node_tuple, node_id):
-      """Create dict node from tuple node."""
-      return {
-          u'id': node_id,
-          u'type': node_tuple[0],
-          u'value': node_tuple[1],
-      }
 
     graph = G.Graph()
-    node1 = (u'node_type_1', u'node_value_1')
-    graph.GetAddNode(node1[0], node1[1])
+    node1 = G.Node(u'node_type_1', u'node_value_1', 0)
+    graph.GetAddNode(node1.type, node1.value)
     self.assertEqual(len(graph.nodes), 1)
-    self.assertEqual(graph.nodes[0], NodeTuplteToDict(node1, 0))
+    self.assertEqual(graph.nodes[0], node1.ToDict())
     self.assertEqual(len(graph.nodes_ids), 1)
 
-    node2 = (u'node_type_1', u'node_value_2')
-    graph.GetAddNode(node2[0], node2[1])
+    node2 = G.Node(u'node_type_1', u'node_value_2', 1)
+    graph.GetAddNode(node2.type, node2.value)
     self.assertEqual(len(graph.nodes), 2)
-    self.assertEqual(graph.nodes[1], NodeTuplteToDict(node2, 1))
+    self.assertEqual(graph.nodes[1], node2.ToDict())
     self.assertEqual(len(graph.nodes_ids), 2)
 
-    graph.GetAddNode(node1[0], node1[1])
+    graph.GetAddNode(node1.type, node1.value)
     self.assertEqual(len(graph.nodes), 2)
-    self.assertEqual(graph.nodes[0], NodeTuplteToDict(node1, 0))
+    self.assertEqual(graph.nodes[0], node1.ToDict())
     self.assertEqual(len(graph.nodes_ids), 2)
 
   def test_AddEvent(self):
