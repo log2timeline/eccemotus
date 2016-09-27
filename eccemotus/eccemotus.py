@@ -19,9 +19,8 @@ Last thing you want to do is to call GetGraphJSON(ParsedDataGenerator)
 to create the actual graph.
 """
 
-from __future__ import print_function
-import sys
 import json
+import logging
 
 try:
   from elasticsearch import Elasticsearch
@@ -43,10 +42,11 @@ def FileDataGenerator(filename, verbose=False):
   Yields:
     dict: event.
   """
+  logger = logging.getLogger(__name__)
   with open(filename, u'r') as input_file:
     for i, line in enumerate(input_file):
       if not i % 100000 and verbose:
-        print(u'File line ', i, file=sys.stderr)
+        logger.info(u'File line {0:d}'.format(i))
       yield json.loads(line)
 
 
@@ -86,10 +86,11 @@ def ElasticDataGenerator(client, indexes, verbose=False):
       }
   }
   VERBOSE_INTERVAL = 10000
+  logger = logging.getLogger(__name__)
   results = helpers.scan(client, query=query, index=indexes)
   for i, response in enumerate(results):
     if not i % VERBOSE_INTERVAL and verbose:
-      print(u'Elastic records ', i, file=sys.stderr)
+      logger.info(u'Elastic records {0:d}'.format(i))
 
     event = response['_source']
     event[u'timesketch_id'] = response[u'_id']

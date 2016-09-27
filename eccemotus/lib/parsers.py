@@ -4,11 +4,7 @@
 Use ParserManager.Parse(event) and it will extract interesting fields in context
 of lateral movement from plaso event.
 """
-from __future__ import print_function
-import json
 import re
-import sys
-import traceback
 
 # Canonical names for interesting information (fields).
 EVENT_ID = u'event_id'
@@ -181,43 +177,7 @@ class ParserManager(object):
 
       return parsed
 
-  @classmethod
-  def ParseLine(cls, line):
-    """Front-end for ParseEvent() that parses one line.
-
-    Args:
-        line (str): event in json_line format.
-
-    Returns:
-        dict: information names and values.
-    """
-    event = json.loads(line)
-    return cls.ParseEvent(event)
-
-  @classmethod
-  def ParseEvent(cls, event):
-    """Front-end for Parse() that does not care about exceptions.
-
-    Args:
-      event (dict): event in json_line format.
-
-    Returns:
-      dict: information names and values. Empty if event does not contain
-      valuable (parseable) information. None if error occurred.
-    """
-    data = None
-    try:
-      data = cls.Parse(event)
-    except KeyboardInterrupt:
-      raise
-    except Exception as e: # pylint: disable=broad-except
-      print(e, file=sys.stderr)
-      print(event, file=sys.stderr)
-      traceback.print_exc(file=sys.stdout)
-    return data
-
-
-# Classes for ssh and other forms of 'machine jumping' parsers.
+# Classes for remote access and other forms of 'machine jumping' parsers.
 # For examples of give types, see tests/parsers.py.
 
 class LinuxUtmpEventParser(object):
