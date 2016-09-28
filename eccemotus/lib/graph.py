@@ -10,7 +10,7 @@ from collections import defaultdict
 from collections import namedtuple
 import logging
 
-import eccemotus.lib.parsers as P
+from eccemotus.lib.parsers import utils
 
 
 class Graph(object):
@@ -62,18 +62,18 @@ class Graph(object):
   # edge.
   Rule = namedtuple(u'Rule', [u'source', u'target', u'type'])
   RULES = [
-      Rule(P.SOURCE_MACHINE_IP, P.SOURCE_MACHINE_NAME, EDGE_IS),
-      Rule(P.SOURCE_USER_NAME, P.SOURCE_USER_ID, EDGE_IS),
-      Rule(P.TARGET_MACHINE_NAME, P.TARGET_MACHINE_IP, EDGE_IS),
-      Rule(P.TARGET_USER_NAME, P.TARGET_USER_ID, EDGE_IS),
-      Rule(P.SOURCE_MACHINE_IP, P.SOURCE_USER_NAME, EDGE_HAS),
-      Rule(P.SOURCE_MACHINE_IP, P.SOURCE_USER_ID, EDGE_HAS),
-      Rule(P.SOURCE_MACHINE_NAME, P.SOURCE_USER_NAME, EDGE_HAS),
-      Rule(P.SOURCE_MACHINE_NAME, P.SOURCE_USER_ID, EDGE_HAS),
-      Rule(P.TARGET_MACHINE_IP, P.TARGET_USER_NAME, EDGE_HAS),
-      Rule(P.TARGET_MACHINE_IP, P.TARGET_USER_ID, EDGE_HAS),
-      Rule(P.TARGET_MACHINE_NAME, P.TARGET_USER_NAME, EDGE_HAS),
-      Rule(P.TARGET_MACHINE_NAME, P.TARGET_USER_ID, EDGE_HAS),
+      Rule(utils.SOURCE_MACHINE_IP, utils.SOURCE_MACHINE_NAME, EDGE_IS),
+      Rule(utils.SOURCE_USER_NAME, utils.SOURCE_USER_ID, EDGE_IS),
+      Rule(utils.TARGET_MACHINE_NAME, utils.TARGET_MACHINE_IP, EDGE_IS),
+      Rule(utils.TARGET_USER_NAME, utils.TARGET_USER_ID, EDGE_IS),
+      Rule(utils.SOURCE_MACHINE_IP, utils.SOURCE_USER_NAME, EDGE_HAS),
+      Rule(utils.SOURCE_MACHINE_IP, utils.SOURCE_USER_ID, EDGE_HAS),
+      Rule(utils.SOURCE_MACHINE_NAME, utils.SOURCE_USER_NAME, EDGE_HAS),
+      Rule(utils.SOURCE_MACHINE_NAME, utils.SOURCE_USER_ID, EDGE_HAS),
+      Rule(utils.TARGET_MACHINE_IP, utils.TARGET_USER_NAME, EDGE_HAS),
+      Rule(utils.TARGET_MACHINE_IP, utils.TARGET_USER_ID, EDGE_HAS),
+      Rule(utils.TARGET_MACHINE_NAME, utils.TARGET_USER_NAME, EDGE_HAS),
+      Rule(utils.TARGET_MACHINE_NAME, utils.TARGET_USER_ID, EDGE_HAS),
   ]
 
   def __init__(self):
@@ -152,8 +152,9 @@ class Graph(object):
     """
 
     # List of things that should be used as ssh source in decreasing priority.
-    SSH_SOURCE = [P.SOURCE_USER_NAME, P.SOURCE_USER_ID, P.SOURCE_MACHINE_NAME,
-                  P.SOURCE_MACHINE_IP, P.SOURCE_PLASO]
+    SSH_SOURCE = [utils.SOURCE_USER_NAME, utils.SOURCE_USER_ID,
+                  utils.SOURCE_MACHINE_NAME, utils.SOURCE_MACHINE_IP,
+                  utils.SOURCE_PLASO]
     for key in SSH_SOURCE:
       if key in event:
         return key, event[key]
@@ -177,8 +178,9 @@ class Graph(object):
     """
 
     # List of things that should be used as ssh target in decreasing priority.
-    SSH_TARGET = [P.TARGET_USER_NAME, P.TARGET_USER_ID, P.TARGET_MACHINE_NAME,
-                  P.TARGET_MACHINE_IP, P.TARGET_PLASO]
+    SSH_TARGET = [utils.TARGET_USER_NAME, utils.TARGET_USER_ID,
+                  utils.TARGET_MACHINE_NAME, utils.TARGET_MACHINE_IP,
+                  utils.TARGET_PLASO]
     for key in SSH_TARGET:
       if key in event:
         return key, event[key]
@@ -192,7 +194,7 @@ class Graph(object):
     This ensures that required nodes are in the graph and creates an edge
     between them.
     Note that source_type is not exactly the node type. It has to be striped of
-    prefix "source:" or "target" by P.GetNodeTypeFromInformation()
+    prefix "source:" or "target" by utils.GetNodeTypeFromInformation()
 
     Args:
       edge_type (str): edge type.
@@ -204,9 +206,9 @@ class Graph(object):
       target_value (str): value of target node.
     """
 
-    source_node_type = P.GetNodeTypeFromInformation(source_type)
+    source_node_type = utils.GetNodeTypeFromInformation(source_type)
     source_id = self.GetAddNode(source_node_type, source_value)
-    target_node_type = P.GetNodeTypeFromInformation(target_type)
+    target_node_type = utils.GetNodeTypeFromInformation(target_type)
     target_id = self.GetAddNode(target_node_type, target_value)
     self.AddEdge(source_id, target_id, edge_type, event_time, event_id)
 
@@ -218,7 +220,7 @@ class Graph(object):
     created with type rule.type.
 
     Args:
-      event (dict[str, str]): parsed event. Result of ParserManager.parse()
+      event (dict[str, str]): parsed event. Result of utils.parse()
           from parsers.py.
     """
 
@@ -229,7 +231,7 @@ class Graph(object):
       if not (source_value and target_value):
         continue
       self.AddData(rule.source, source_value, rule.target, target_value,
-                   rule.type, event[P.TIMESTAMP], event[P.EVENT_ID])
+                   rule.type, event[utils.TIMESTAMP], event[utils.EVENT_ID])
 
     # Rules for access edge.
 
@@ -238,7 +240,7 @@ class Graph(object):
     if ssh_source_value and ssh_target_value:
       self.AddData(ssh_source_type, ssh_source_value, ssh_target_type,
                    ssh_target_value, self.__class__.EDGE_ACCEESS,
-                   event[P.TIMESTAMP], event[P.EVENT_ID])
+                   event[utils.TIMESTAMP], event[utils.EVENT_ID])
 
   def MinimalSerialize(self):
     """Serialized only required information for visualization."""
@@ -301,5 +303,3 @@ def CreateGraph(data, verbose=False):
                                              len(graph.edges)))
 
   return graph
-
-

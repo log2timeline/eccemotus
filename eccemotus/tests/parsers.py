@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Tests for lib/parsers.py
+"""Tests for parsers."""
 
-We have a few events in json format and for each we know what we are expecting.
-"""
 import unittest
 
-import eccemotus.lib.parsers as P
+from eccemotus.lib.parsers import manager
+from eccemotus.lib.parsers import utils
 
 
 class ParserManagerTest(unittest.TestCase):
@@ -13,69 +12,74 @@ class ParserManagerTest(unittest.TestCase):
   # pylint: disable=line-too-long
 
   def _testParser(self, expected_result, event):
-    """Generic checks for testing a parser."""
-    parsed_event = P.ParserManager.Parse(event)
+    """Generic checks for testing a parser.
+
+    Args:
+      expected_result (dict): expected result of parsing.
+      event (dict): dict serialized plaso event.
+    """
+    parsed_event = manager.ParserManager.Parse(event)
     for key, value in expected_result.items():
       self.assertIn(key, parsed_event)
-      self.assertEqual(parsed_event[key], value, u'for key=%s' % key)
+      self.assertEqual(parsed_event[key], value)
 
   def test_LinuxUtmp(self):
     """Test parser for linux:utmp:event data_type."""
     expected = {
-        P.SOURCE_MACHINE_IP: u'192.168.1.11',
-        P.SOURCE_MACHINE_NAME: u'192.168.1.11',
-        P.TARGET_USER_NAME: u'dean@acserver',
-        P.TARGET_MACHINE_NAME: u'acserver',
-        P.TARGET_PLASO:
-        u'acserver.dd/images/work/vlejd/home/google/local/usr/',
-        P.TIMESTAMP: 1441559606244560,
+        utils.SOURCE_MACHINE_IP: u'192.168.1.11',
+        utils.SOURCE_MACHINE_NAME: u'192.168.1.11',
+        utils.TARGET_USER_NAME: u'dean@acserver',
+        utils.TARGET_MACHINE_NAME: u'acserver',
+        utils.TARGET_PLASO:
+        u'acserver.dd/images/user/usr/',
+        utils.TIMESTAMP: 1441559606244560,
     }
     self._testParser(expected, self._linux_utmp_event)
 
   def test_WinEvtx(self):
     """Test parser for windows:evtx:record data_type."""
     expected = {
-        P.SOURCE_MACHINE_NAME: u'REGISTRAR.internal.greendale.edu',
-        P.SOURCE_USER_ID: u'S-1-0-0@REGISTRAR.internal.greendale.edu',
-        P.SOURCE_PLASO: u'registrar.dd/greendale_images/media/',
-        P.TARGET_MACHINE_NAME: u'STUDENT-PC1',
-        P.TARGET_MACHINE_IP: u'192.168.1.11',
-        P.TARGET_USER_ID: u'S-1-5-7@STUDENT-PC1',
-        P.TARGET_USER_NAME: u'ANONYMOUS LOGON@STUDENT-PC1',
-        P.TIMESTAMP: 1440409600617570,
+        utils.SOURCE_MACHINE_NAME: u'REGISTRAR.internal.greendale.edu',
+        utils.SOURCE_USER_ID: u'S-1-0-0@REGISTRAR.internal.greendale.edu',
+        utils.SOURCE_PLASO: u'registrar.dd/greendale_images/media/',
+        utils.TARGET_MACHINE_NAME: u'STUDENT-PC1',
+        utils.TARGET_MACHINE_IP: u'192.168.1.11',
+        utils.TARGET_USER_ID: u'S-1-5-7@STUDENT-PC1',
+        utils.TARGET_USER_NAME: u'ANONYMOUS LOGON@STUDENT-PC1',
+        utils.TIMESTAMP: 1440409600617570,
     }
     self._testParser(expected, self._win_evtx_event)
 
   def test_Bsm(self):
     """Test parser for bsm:event data_type."""
     expected = {
-        P.SOURCE_MACHINE_IP: u'192.168.1.11',
-        P.TARGET_PLASO: u'dean_mac.dd/greendale_images/media/',
-        P.TARGET_USER_ID: u'502@dean_mac.dd/greendale_images/media/',
-        P.TARGET_USER_NAME: u'dean@dean_mac.dd/greendale_images/media/',
+        utils.SOURCE_MACHINE_IP: u'192.168.1.11',
+        utils.TARGET_PLASO: u'dean_mac.dd/greendale_images/media/',
+        utils.TARGET_USER_ID: u'502@dean_mac.dd/greendale_images/media/',
+        utils.TARGET_USER_NAME: u'dean@dean_mac.dd/greendale_images/media/',
     }
     self._testParser(expected, self._bsm_event)
 
   def test_SysLog(self):
     """Test parser for syslog:line data_type."""
     expected = {
-        P.SOURCE_MACHINE_IP: u'10.0.8.6',
-        P.TARGET_PLASO:
-        u'acserver.dd/images/work/vlejd/home/google/local/usr/',
-        P.TARGET_USER_NAME:
-        u'dean@acserver.dd/images/work/vlejd/home/google/local/usr/',
-        P.TIMESTAMP: 1440854525000000,
+        utils.SOURCE_MACHINE_IP: u'10.0.8.6',
+        utils.TARGET_PLASO:
+        u'acserver.dd/images/user/usr/',
+        utils.TARGET_USER_NAME:
+        u'dean@acserver.dd/images/user/usr/',
+        utils.TIMESTAMP: 1440854525000000,
     }
     self._testParser(expected, self._sys_log_event)
 
   def test_SysLogSsh(self):
     """Test parser for syslog:ssh:login data_type."""
     expected = {
-        P.SOURCE_MACHINE_IP: u'10.0.8.6',
-        P.TARGET_MACHINE_NAME: u'acserver',
-        P.TARGET_PLASO:
-        u'acserver.dd/images/work/vlejd/home/google/local/usr/',
-        P.TARGET_USER_NAME: u'dean@acserver',
+        utils.SOURCE_MACHINE_IP: u'10.0.8.6',
+        utils.TARGET_MACHINE_NAME: u'acserver',
+        utils.TARGET_PLASO:
+        u'acserver.dd/images/user/usr/',
+        utils.TARGET_USER_NAME: u'dean@acserver',
     }
     self._testParser(expected, self._sys_log_ssh)
 
@@ -108,7 +112,7 @@ class ParserManagerTest(unittest.TestCase):
                       u'parent':
                       {u'__type__': u'PathSpec',
                        u'location':
-                       u'/usr/local/google/home/vlejd/work/images/acserver.dd',
+                       u'/usr/user/images/acserver.dd',
                        u'type_indicator': u'OS'},
                       u'type_indicator': u'RAW'},
                      u'part_index': 2,
@@ -247,7 +251,7 @@ class ParserManagerTest(unittest.TestCase):
                      u'parent':
                      {u'__type__': u'PathSpec',
                       u'location':
-                      u'/usr/local/google/home/vlejd/work/images/acserver.dd',
+                      u'/usr/user/images/acserver.dd',
                       u'type_indicator': u'OS'},
                      u'type_indicator': u'RAW'},
                     u'part_index': 2,
@@ -299,7 +303,7 @@ class ParserManagerTest(unittest.TestCase):
                      u'parent':
                      {u'__type__': u'PathSpec',
                       u'location':
-                      u'/usr/local/google/home/vlejd/work/images/acserver.dd',
+                      u'/usr/user/images/acserver.dd',
                       u'type_indicator': u'OS'},
                      u'type_indicator': u'RAW'},
                     u'part_index': 2,
