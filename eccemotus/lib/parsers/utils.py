@@ -34,6 +34,7 @@ def GetNodeTypeFromInformation(information):
 
   Args:
       information (string): canonical name of interesting field.
+
   Returns:
     str: part of information string after ":".
   """
@@ -46,6 +47,7 @@ def FirstTrue(values, default=None):
   Args:
     values (iterable): list of values to choose from.
     default (optional): default return.
+
   Returns:
     ?: first True object.
   Used to determine a meaningful name for a machine.
@@ -65,6 +67,7 @@ def GetImageName(event):
 
   Args:
     event (dict): json serialized plaso event.
+
   Returns:
     str: path to plaso file in reversed order (look down at the example).
   """

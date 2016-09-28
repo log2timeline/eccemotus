@@ -105,8 +105,7 @@ class Graph(object):
 
     return self.nodes_ids[node.ToTuple()]
 
-  def AddEdge(
-      self, source_id, target_id, edge_type, timestamp=None, event_id=None):
+  def AddEdge(self, source_id, target_id, edge_type, timestamp, event_id):
     """Add new edge to graph or just add new event to existing edge.
 
     Args:
@@ -134,7 +133,8 @@ class Graph(object):
                         u'timestamp': timestamp})],
       })
 
-  def GetSshSource(self, event):
+  @classmethod
+  def GetSshSource(cls, event):
     """Return most specific ssh_source.
 
     Knowing that the ssh was from user Dean is better than knowing only the ip
@@ -160,7 +160,8 @@ class Graph(object):
         return key, event[key]
     return None, None
 
-  def GetSshTarget(self, event):
+  @classmethod
+  def GetSshTarget(cls, event):
     """Return best most specific ssh_target.
 
     Knowing that the ssh was to user Dean is better than knowing only the ip
@@ -235,8 +236,8 @@ class Graph(object):
 
     # Rules for access edge.
 
-    ssh_source_type, ssh_source_value = self.GetSshSource(event)
-    ssh_target_type, ssh_target_value = self.GetSshTarget(event)
+    ssh_source_type, ssh_source_value = self.__class__.GetSshSource(event)
+    ssh_target_type, ssh_target_value = self.__class__.GetSshTarget(event)
     if ssh_source_value and ssh_target_value:
       self.AddData(ssh_source_type, ssh_source_value, ssh_target_type,
                    ssh_target_value, self.__class__.EDGE_ACCEESS,
@@ -276,6 +277,9 @@ class Node(object):
 
   def ToTuple(self):
     """Creates tuple representation of node.
+
+    Used as a unique identifier for the node. Nodes with the same TuTuple
+    representation should have have same ids.
 
     Returns:
       tuple [str,str]: tuple representation of node.

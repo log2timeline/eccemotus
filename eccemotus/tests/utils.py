@@ -46,10 +46,10 @@ class UtilsTest(unittest.TestCase):
                 u'location': u'/p1',
                 u'parent': {
                     u'__type__': u'PathSpec',
-                      u'parent': {
-                          u'__type__': u'PathSpec',
-                          u'location': u'/home/user/images/image.dd',
-                          u'type_indicator': u'OS'},
+                    u'parent': {
+                        u'__type__': u'PathSpec',
+                        u'location': u'/home/user/images/image.dd',
+                        u'type_indicator': u'OS'},
                     u'type_indicator': u'RAW'},
                 u'part_index': 2,
                 u'start_offset': 1048576,

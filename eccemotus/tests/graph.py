@@ -6,10 +6,11 @@ import unittest
 import eccemotus.lib.graph as G
 from eccemotus.lib.parsers import utils
 
-class GrapherTest(unittest.TestCase):
+class GraphTest(unittest.TestCase):
   """Test Graph."""
+
   def test_init(self):
-    """Test graph initialization."""
+    """Test Graph initialization."""
     graph = G.Graph()
     self.assertEqual(len(graph.edges), 0)
     self.assertEqual(len(graph.edges_ids), 0)
@@ -53,6 +54,161 @@ class GrapherTest(unittest.TestCase):
 
     self.assertEqual(len(graph.nodes), 4)
     self.assertEqual(len(graph.edges), 3)
+
+  def test_AddEdge(self):
+    """Test AddEdge."""
+    graph = G.Graph()
+    node1 = G.Node(u'node_type_1', u'node_value_1')
+    node1_id = graph.GetAddNode(node1.type, node1.value)
+    node2 = G.Node(u'node_type_2', u'node_value_2')
+    node2_id = graph.GetAddNode(node2.type, node2.value)
+
+    graph.AddEdge(node1_id, node2_id, u'is', 10, 20)
+    self.assertEqual(len(graph.edges), 1)
+    edge = graph.edges[0]
+    self.assertEqual(len(edge[u'events']), 1)
+
+    graph.AddEdge(node1_id, node2_id, u'is', 20, 30)
+    self.assertEqual(len(graph.edges), 1)
+    edge = graph.edges[0]
+    self.assertEqual(len(edge[u'events']), 2)
+
+  def test_GetSshSource(self):
+    """Test GetSshSource."""
+    source_types = [utils.SOURCE_USER_NAME, utils.SOURCE_USER_ID,
+                    utils.SOURCE_MACHINE_NAME, utils.SOURCE_MACHINE_IP,
+                    utils.SOURCE_PLASO, u'random_type1', u'random_type2']
+    source_values = [u'value_{0:s}'.format(source) for source in source_types]
+
+    for i in range(5):  # 5 is number of real types.
+      expected_type = source_types[i]
+      expected_value = source_values[i]
+      event = dict(zip(source_types[i:], source_values[i:]))
+      source = G.Graph.GetSshSource(event)
+      self.assertEqual(source, (expected_type, expected_value))
+
+    event = dict(zip(source_types[-2:], source_values[-2:]))
+    expecetd_source = (None, None)
+    source = G.Graph.GetSshSource(event)
+    self.assertEqual(source, expecetd_source)
+
+  def test_GetSshTarget(self):
+    """Test GetSshTarget."""
+    target_types = [utils.TARGET_USER_NAME, utils.TARGET_USER_ID,
+                    utils.TARGET_MACHINE_NAME, utils.TARGET_MACHINE_IP,
+                    utils.TARGET_PLASO, u'random_type1', u'random_type2']
+    target_values = [u'value_{0:s}'.format(source) for source in target_types]
+
+    for i in range(5):  # 5 is number of real types.
+      expected_type = target_types[i]
+      expected_value = target_values[i]
+      event = dict(zip(target_types[i:], target_values[i:]))
+      source = G.Graph.GetSshTarget(event)
+      self.assertEqual(source, (expected_type, expected_value))
+
+    event = dict(zip(target_types[-2:], target_values[-2:]))
+    expecetd_source = (None, None)
+    source = G.Graph.GetSshTarget(event)
+    self.assertEqual(source, expecetd_source)
+
+  def test_AddData(self):
+    """Test AddData."""
+    graph = G.Graph()
+
+    graph.AddData(utils.SOURCE_MACHINE_NAME, u'machine1',
+                  utils.TARGET_MACHINE_NAME, u'machine2', u'access', 10, 20)
+
+    self.assertEqual(len(graph.nodes), 2)
+    self.assertEqual(len(graph.edges), 1)
+
+  def test_MinimalSerialize(self):
+    """Test MinimalSerialize."""
+    graph = G.Graph()
+    graph.AddData(utils.SOURCE_MACHINE_NAME, u'machine1',
+                  utils.TARGET_MACHINE_NAME, u'machine2', u'access', 10, 20)
+
+    serialized = graph.MinimalSerialize()
+    expected_serialized = {
+        u'nodes': [
+            {
+                u'type': u'machine_name',
+                u'id': 0,
+                u'value': u'machine1'
+            },
+            {
+                u'type':
+                u'machine_name',
+                u'id': 1,
+                u'value': u'machine2'
+            }],
+        u'links': [
+            {
+                u'source': 0,
+                u'type': 'access',
+                u'events': [
+                    {
+                        u'timestamp': 10,
+                        u'id': 20
+                    }],
+                u'target': 1
+            }]
+    }
+
+    self.assertEqual(serialized, expected_serialized)
+
+
+class NodeTest(unittest.TestCase):
+  """Test Node."""
+
+  def test_init(self):
+    """Test Node initialization."""
+    node_type = u'type'
+    node_value = u'value'
+    node_id = 10
+
+    node = G.Node(node_type, node_value)
+    self.assertEqual(node.type, node_type)
+    self.assertEqual(node.value, node_value)
+    self.assertIs(node.id, None)
+
+    node = G.Node(node_type, node_value, node_id)
+    self.assertEqual(node.type, node_type)
+    self.assertEqual(node.value, node_value)
+    self.assertIs(node.id, node_id)
+
+  def test_ToTuple(self):
+    """Test ToTuple."""
+    node1_type = u'type'
+    node1_value = u'value'
+    node1_id = 10
+    node1 = G.Node(node1_type, node1_value, node1_id)
+
+    node1_tuple = node1.ToTuple()
+    expected_tuple = (node1_type, node1_value)
+    self.assertEqual(node1_tuple, expected_tuple)
+
+    node1_with_id_none = G.Node(node1_type, node1_value)
+    node1_with_id_none_tuple = node1_with_id_none.ToTuple()
+    self.assertEqual(node1_tuple, node1_with_id_none_tuple)
+
+  def test_ToDict(self):
+    """Test ToDict."""
+    node1_type = u'type'
+    node1_value = u'value'
+    node1_id = 10
+    node1 = G.Node(node1_type, node1_value, node1_id)
+
+    node1_dict = node1.ToDict()
+    expected_dict = {
+        u'id': node1_id,
+        u'type': node1_type,
+        u'value': node1_value
+    }
+    self.assertEqual(node1_dict, expected_dict)
+
+
+class CreateGraphTest(unittest.TestCase):
+  """Test CreateGraph."""
 
   def test_CreateGraph(self):
     """Test CreateGraph."""
