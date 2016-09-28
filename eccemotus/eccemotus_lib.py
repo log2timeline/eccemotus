@@ -29,7 +29,7 @@ except ImportError:
   Elasticsearch = None
 
 import lib.graph as G # pylint: disable=relative-import
-import lib.parsers as P # pylint: disable=relative-import
+from lib.parsers import manager # pylint: disable=relative-import
 
 def FileDataGenerator(filename, verbose=False):
   """Reads JSON_line file and yields events.
@@ -70,7 +70,7 @@ def ElasticDataGenerator(client, indexes, verbose=False):
 
   # Generating term filter for data_types, that we can parse.
   should = [{u'term': {u'data_type': data_type}}
-            for data_type in P.ParserManager.GetParsedTypes()]
+            for data_type in manager.ParserManager.GetParsedTypes()]
 
   # Elasticsearch query.
   query = {
@@ -127,7 +127,7 @@ def ParsedDataGenerator(raw_generator):
   for raw_event in raw_generator:
     if not raw_event:
       continue
-    parsed = P.ParserManager.Parse(raw_event)
+    parsed = manager.ParserManager.Parse(raw_event)
     if parsed:
       yield parsed
 

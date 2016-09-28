@@ -173,7 +173,7 @@ class ParserManagerTest(unittest.TestCase):
       u'strings':
       [u'S-1-0-0', u'-', u'-', u'0x0000000000000000', u'S-1-5-7', u'ANONYMOUS LOGON',
        u'NT AUTHORITY', u'0x0000000000094a1b', u'3', u'NtLmSsp ', u'NTLM',
-       u'STUDENT-PC1', '{00000000-0000-0000-0000-000000000000}', u'-', u'NTLM V1',
+       u'STUDENT-PC1', u'{00000000-0000-0000-0000-000000000000}', u'-', u'NTLM V1',
        u'128', u'0x0000000000000000', u'-', u'192.168.1.11', u'49192'],
       u'timestamp': 1440409600617570,
       u'timestamp_desc': u'Content Modification Time',
