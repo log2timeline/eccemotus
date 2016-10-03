@@ -2,7 +2,7 @@
 """Tests for eccemotus.py"""
 
 import unittest
-import eccemotus.eccemotus_lib as E
+import eccemotus.eccemotus_lib as eccemotus
 
 class EccemotusTest(unittest.TestCase):
   """Test eccemotus."""
@@ -41,7 +41,7 @@ class EccemotusTest(unittest.TestCase):
         u'username': u'-',
         u'uuid': u'a85d856591d94678a555bda3d1efff54'
     }
-    graph = E.GetGraph([event])
+    graph = eccemotus.GetGraph([event])
     self.assertEqual(len(graph.nodes), 6)
     self.assertEqual(len(graph.edges), 8)
 

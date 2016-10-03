@@ -15,8 +15,6 @@ class SysLogParser(parser_interface.ParserInterface):
       r'.*Accepted password for (?P<user>\S+) '
       r'from (?P<ip>(?:[0-9]{1,3}\.){3}[0-9]{1,3}) port (?P<port>(\d+)).*')
 
-  # NOTE: I do not care for fail attempts tight now.
-
   @classmethod
   def Parse(cls, event):
     """Parsing event.message with regexp.

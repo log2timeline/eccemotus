@@ -2,6 +2,10 @@
 """Helpful constants and functions for parsers."""
 
 # Canonical names for interesting information (fields).
+# _PLASO is a name of a plaso file that contained the log. SOURCE_PLASO means
+# there was a connection FROM the machine that stored the log (plaso file
+# identifies the source) and TARGET_PLASO  means there was a connection TO the
+# machine that stared the log (plaso file identifies the target).
 EVENT_ID = u'event_id'
 TIMESTAMP = u'timestamp'
 
@@ -73,8 +77,9 @@ def GetImageName(event):
   """
   spec = event.get(u'pathspec', {})
   if isinstance(spec, basestring):
-    # This is needed if data some from elasticsearch. Because it likes to cast
-    # things to strings.
+    # This is needed in case data come from elasticsearch. event['pathspec']
+    # is naturally a nested dictionary but elastic search returns it as a
+    # string.
     spec = eval(spec)  # pylint: disable=eval-used
 
   while u'parent' in spec:

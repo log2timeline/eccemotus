@@ -7,7 +7,7 @@ from eccemotus.lib.parsers import utils
 
 
 class LinuxUtmpEventParser(parser_interface.ParserInterface):
-  """Parser for linux:utm:event data_type."""
+  """Parser for linux:utmp:event data_type."""
   DATA_TYPE = u'linux:utmp:event'
 
   @classmethod

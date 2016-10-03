@@ -3,7 +3,7 @@
 
 import unittest
 
-import eccemotus.lib.graph as G
+from eccemotus.lib import graph as graph_lib
 from eccemotus.lib.parsers import utils
 
 class GraphTest(unittest.TestCase):
@@ -11,7 +11,7 @@ class GraphTest(unittest.TestCase):
 
   def test_init(self):
     """Test Graph initialization."""
-    graph = G.Graph()
+    graph = graph_lib.Graph()
     self.assertEqual(len(graph.edges), 0)
     self.assertEqual(len(graph.edges_ids), 0)
     self.assertEqual(len(graph.nodes), 0)
@@ -19,14 +19,14 @@ class GraphTest(unittest.TestCase):
 
   def test_GetAddNode(self):
     """Test GetAddNode method."""
-    graph = G.Graph()
-    node1 = G.Node(u'node_type_1', u'node_value_1', 0)
+    graph = graph_lib.Graph()
+    node1 = graph_lib.Node(u'node_type_1', u'node_value_1', 0)
     graph.GetAddNode(node1.type, node1.value)
     self.assertEqual(len(graph.nodes), 1)
     self.assertEqual(graph.nodes[0], node1.ToDict())
     self.assertEqual(len(graph.nodes_ids), 1)
 
-    node2 = G.Node(u'node_type_1', u'node_value_2', 1)
+    node2 = graph_lib.Node(u'node_type_1', u'node_value_2', 1)
     graph.GetAddNode(node2.type, node2.value)
     self.assertEqual(len(graph.nodes), 2)
     self.assertEqual(graph.nodes[1], node2.ToDict())
@@ -39,7 +39,7 @@ class GraphTest(unittest.TestCase):
 
   def test_AddEvent(self):
     """Test AddEvent."""
-    graph = G.Graph()
+    graph = graph_lib.Graph()
     event = {
         utils.EVENT_ID: 1,
         utils.SOURCE_MACHINE_IP: u'192.168.1.11',
@@ -57,10 +57,10 @@ class GraphTest(unittest.TestCase):
 
   def test_AddEdge(self):
     """Test AddEdge."""
-    graph = G.Graph()
-    node1 = G.Node(u'node_type_1', u'node_value_1')
+    graph = graph_lib.Graph()
+    node1 = graph_lib.Node(u'node_type_1', u'node_value_1')
     node1_id = graph.GetAddNode(node1.type, node1.value)
-    node2 = G.Node(u'node_type_2', u'node_value_2')
+    node2 = graph_lib.Node(u'node_type_2', u'node_value_2')
     node2_id = graph.GetAddNode(node2.type, node2.value)
 
     graph.AddEdge(node1_id, node2_id, u'is', 10, 20)
@@ -73,8 +73,8 @@ class GraphTest(unittest.TestCase):
     edge = graph.edges[0]
     self.assertEqual(len(edge[u'events']), 2)
 
-  def test_GetSshSource(self):
-    """Test GetSshSource."""
+  def test_GetRemoteSource(self):
+    """Test GetRemoteSource."""
     source_types = [utils.SOURCE_USER_NAME, utils.SOURCE_USER_ID,
                     utils.SOURCE_MACHINE_NAME, utils.SOURCE_MACHINE_IP,
                     utils.SOURCE_PLASO, u'random_type1', u'random_type2']
@@ -84,16 +84,16 @@ class GraphTest(unittest.TestCase):
       expected_type = source_types[i]
       expected_value = source_values[i]
       event = dict(zip(source_types[i:], source_values[i:]))
-      source = G.Graph.GetSshSource(event)
+      source = graph_lib.Graph.GetRemoteSource(event)
       self.assertEqual(source, (expected_type, expected_value))
 
     event = dict(zip(source_types[-2:], source_values[-2:]))
     expecetd_source = (None, None)
-    source = G.Graph.GetSshSource(event)
+    source = graph_lib.Graph.GetRemoteSource(event)
     self.assertEqual(source, expecetd_source)
 
-  def test_GetSshTarget(self):
-    """Test GetSshTarget."""
+  def test_GetRemoteTarget(self):
+    """Test GetRemoteTarget."""
     target_types = [utils.TARGET_USER_NAME, utils.TARGET_USER_ID,
                     utils.TARGET_MACHINE_NAME, utils.TARGET_MACHINE_IP,
                     utils.TARGET_PLASO, u'random_type1', u'random_type2']
@@ -103,17 +103,17 @@ class GraphTest(unittest.TestCase):
       expected_type = target_types[i]
       expected_value = target_values[i]
       event = dict(zip(target_types[i:], target_values[i:]))
-      source = G.Graph.GetSshTarget(event)
+      source = graph_lib.Graph.GetRemoteTarget(event)
       self.assertEqual(source, (expected_type, expected_value))
 
     event = dict(zip(target_types[-2:], target_values[-2:]))
     expecetd_source = (None, None)
-    source = G.Graph.GetSshTarget(event)
+    source = graph_lib.Graph.GetRemoteTarget(event)
     self.assertEqual(source, expecetd_source)
 
   def test_AddData(self):
     """Test AddData."""
-    graph = G.Graph()
+    graph = graph_lib.Graph()
 
     graph.AddData(utils.SOURCE_MACHINE_NAME, u'machine1',
                   utils.TARGET_MACHINE_NAME, u'machine2', u'access', 10, 20)
@@ -123,7 +123,7 @@ class GraphTest(unittest.TestCase):
 
   def test_MinimalSerialize(self):
     """Test MinimalSerialize."""
-    graph = G.Graph()
+    graph = graph_lib.Graph()
     graph.AddData(utils.SOURCE_MACHINE_NAME, u'machine1',
                   utils.TARGET_MACHINE_NAME, u'machine2', u'access', 10, 20)
 
@@ -166,12 +166,12 @@ class NodeTest(unittest.TestCase):
     node_value = u'value'
     node_id = 10
 
-    node = G.Node(node_type, node_value)
+    node = graph_lib.Node(node_type, node_value)
     self.assertEqual(node.type, node_type)
     self.assertEqual(node.value, node_value)
     self.assertIs(node.id, None)
 
-    node = G.Node(node_type, node_value, node_id)
+    node = graph_lib.Node(node_type, node_value, node_id)
     self.assertEqual(node.type, node_type)
     self.assertEqual(node.value, node_value)
     self.assertIs(node.id, node_id)
@@ -181,13 +181,13 @@ class NodeTest(unittest.TestCase):
     node1_type = u'type'
     node1_value = u'value'
     node1_id = 10
-    node1 = G.Node(node1_type, node1_value, node1_id)
+    node1 = graph_lib.Node(node1_type, node1_value, node1_id)
 
     node1_tuple = node1.ToTuple()
     expected_tuple = (node1_type, node1_value)
     self.assertEqual(node1_tuple, expected_tuple)
 
-    node1_with_id_none = G.Node(node1_type, node1_value)
+    node1_with_id_none = graph_lib.Node(node1_type, node1_value)
     node1_with_id_none_tuple = node1_with_id_none.ToTuple()
     self.assertEqual(node1_tuple, node1_with_id_none_tuple)
 
@@ -196,7 +196,7 @@ class NodeTest(unittest.TestCase):
     node1_type = u'type'
     node1_value = u'value'
     node1_id = 10
-    node1 = G.Node(node1_type, node1_value, node1_id)
+    node1 = graph_lib.Node(node1_type, node1_value, node1_id)
 
     node1_dict = node1.ToDict()
     expected_dict = {
@@ -222,6 +222,6 @@ class CreateGraphTest(unittest.TestCase):
         u'acserver.dd/images/work/vlejd/home/google/local/usr/',
         utils.TIMESTAMP: 1441559606244560}
     events = [event]
-    graph = G.CreateGraph(events)
+    graph = graph_lib.CreateGraph(events)
     self.assertEqual(len(graph.nodes), 4)
     self.assertEqual(len(graph.edges), 3)

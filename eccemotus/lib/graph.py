@@ -37,7 +37,7 @@ class Graph(object):
         has: Machine has an user
         is: Machine is ip_address (this is not necessarily true for the whole
             time)
-        access: ssh connection
+        access: remote connection
     events:
       List of event ids and timestamps. Those events are responsible for
       creation of given edge. Events can be found by id in timesketch or
@@ -56,7 +56,7 @@ class Graph(object):
   # Edge types.
   EDGE_HAS = u'has'
   EDGE_IS = u'is'
-  EDGE_ACCEESS = u'access'
+  EDGE_ACCESS = u'access'
 
   # Rules describing which pairs of information should create which type of
   # edge.
@@ -134,11 +134,11 @@ class Graph(object):
       })
 
   @classmethod
-  def GetSshSource(cls, event):
-    """Return most specific ssh_source.
+  def GetRemoteSource(cls, event):
+    """Return most specific remote_source.
 
-    Knowing that the ssh was from user Dean is better than knowing only the ip
-    address.
+    Knowing that the remote connection was from user Dean is better than knowing
+    only the ip address.
     Note that user name and user id is extended by machine identifier.
 
     Args:
@@ -151,21 +151,22 @@ class Graph(object):
         str|None: value of most specific source. None if no source is present.
     """
 
-    # List of things that should be used as ssh source in decreasing priority.
-    SSH_SOURCE = [utils.SOURCE_USER_NAME, utils.SOURCE_USER_ID,
-                  utils.SOURCE_MACHINE_NAME, utils.SOURCE_MACHINE_IP,
-                  utils.SOURCE_PLASO]
-    for key in SSH_SOURCE:
+    # List of things that should be used as remote source in decreasing
+    # priority.
+    REMOTE_SOURCE = [utils.SOURCE_USER_NAME, utils.SOURCE_USER_ID,
+                     utils.SOURCE_MACHINE_NAME, utils.SOURCE_MACHINE_IP,
+                     utils.SOURCE_PLASO]
+    for key in REMOTE_SOURCE:
       if key in event:
         return key, event[key]
     return None, None
 
   @classmethod
-  def GetSshTarget(cls, event):
-    """Return best most specific ssh_target.
+  def GetRemoteTarget(cls, event):
+    """Return best most specific remote_target.
 
-    Knowing that the ssh was to user Dean is better than knowing only the ip
-    address.
+    Knowing that the remote connection was to user Dean is better than knowing
+    only the ip address.
     Note that user name and user id is extended by machine identifier.
 
     Args:
@@ -178,11 +179,12 @@ class Graph(object):
         str|None: value of most specific target. None if no target is present.
     """
 
-    # List of things that should be used as ssh target in decreasing priority.
-    SSH_TARGET = [utils.TARGET_USER_NAME, utils.TARGET_USER_ID,
-                  utils.TARGET_MACHINE_NAME, utils.TARGET_MACHINE_IP,
-                  utils.TARGET_PLASO]
-    for key in SSH_TARGET:
+    # List of things that should be used as remote target in decreasing
+    # priority.
+    REMOTE_TARGET = [utils.TARGET_USER_NAME, utils.TARGET_USER_ID,
+                     utils.TARGET_MACHINE_NAME, utils.TARGET_MACHINE_IP,
+                     utils.TARGET_PLASO]
+    for key in REMOTE_TARGET:
       if key in event:
         return key, event[key]
     return None, None
@@ -236,11 +238,13 @@ class Graph(object):
 
     # Rules for access edge.
 
-    ssh_source_type, ssh_source_value = self.__class__.GetSshSource(event)
-    ssh_target_type, ssh_target_value = self.__class__.GetSshTarget(event)
-    if ssh_source_value and ssh_target_value:
-      self.AddData(ssh_source_type, ssh_source_value, ssh_target_type,
-                   ssh_target_value, self.__class__.EDGE_ACCEESS,
+    remote_source_tuple = self.__class__.GetRemoteSource(event)
+    remote_source_type, remote_source_value = remote_source_tuple
+    remote_target_tuple = self.__class__.GetRemoteTarget(event)
+    remote_target_type, remote_target_value = remote_target_tuple
+    if remote_source_value and remote_target_value:
+      self.AddData(remote_source_type, remote_source_value, remote_target_type,
+                   remote_target_value, self.__class__.EDGE_ACCESS,
                    event[utils.TIMESTAMP], event[utils.EVENT_ID])
 
   def MinimalSerialize(self):

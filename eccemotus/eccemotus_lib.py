@@ -28,7 +28,7 @@ try:
 except ImportError:
   Elasticsearch = None
 
-import lib.graph as G # pylint: disable=relative-import
+from lib import graph as graph_lib# pylint: disable=relative-import
 from lib.parsers import manager # pylint: disable=relative-import
 
 def FileDataGenerator(filename, verbose=False):
@@ -61,7 +61,7 @@ def ElasticDataGenerator(client, indexes, verbose=False):
     verbose (bool): control for verbosity.
 
   Yields:
-    dict: json representation of plaso event.
+    dict: JSON representation of plaso event.
   """
 
   if Elasticsearch is None:
@@ -98,7 +98,7 @@ def ElasticDataGenerator(client, indexes, verbose=False):
 
 
 def GetClient(host, port):
-  """creates elasticsearch client.
+  """Creates elasticsearch client.
 
   Args:
     host (str): ip address.
@@ -141,5 +141,5 @@ def GetGraph(raw_generator, verbose=False):
     Graph: graph created based on events.
   """
   parsed_generator = ParsedDataGenerator(raw_generator)
-  graph = G.CreateGraph(parsed_generator, verbose)
+  graph = graph_lib.CreateGraph(parsed_generator, verbose)
   return graph

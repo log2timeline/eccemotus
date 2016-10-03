@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Parser for linux:utm:event data_type."""
+"""Contains event parser interface class.
+
+All parsers should implement Parse method, that extracts valuable information
+from plaso event in context of lateral movement.
+Every parser should have DATA_TYPE property which specifies events of which
+data_types will be parsed by this parser.
+"""
 
 import abc
 
