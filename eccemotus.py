@@ -6,12 +6,12 @@ import argparse
 import json
 import os
 import shutil
-import eccemotus.eccemotus as E  # pylint: disable=no-name-in-module
+from  eccemotus import eccemotus   # pylint: disable=no-name-in-module
 
 
 def CreateGraph(generator, args):
   """Handles creating and saving graph from data generator."""
-  graph = E.GetGraph(generator, args.verbose)
+  graph = eccemotus.GetGraph(generator, args.verbose)
   serialized = graph.MinimalSerialize()
 
   with open(args.output, u'w') as output_file:
@@ -25,39 +25,43 @@ def CreateGraph(generator, args):
 
 def ElasticToGraph(args):
   """Computes lateral graph from data at elastic-search."""
-  client = E.GetClient(args.host, args.port)
-  generator = E.ElasticDataGenerator(client, args.indices, args.verbose)
+  client = eccemotus.GetClient(args.host, args.port)
+  generator = eccemotus.ElasticDataGenerator(client, args.indices, args.verbose)
   CreateGraph(generator, args)
 
 
 def FileToGraph(args):
   """Computes lateral graph from data at file."""
-  generator = E.FileDataGenerator(args.input, True)
+  generator = eccemotus.FileDataGenerator(args.input, True)
   CreateGraph(generator, args)
 
 
 def Render(args):
   """Creates a directory html visualization of graph."""
-
-  directory = args.output.rstrip(u'/')
+  directory = args.output
   base = os.path.dirname(os.path.abspath(__file__))
   base = os.path.join(base, u'eccemotus_ui')
 
   if not os.path.exists(args.output):
     os.makedirs(args.output)
 
-  shutil.copy(args.input, directory + u'/graph.js')
-  shutil.copy(base + u'/templates/dirty_index.html', directory + u'/index.html')
+  shutil.copy(args.input, os.path.join(directory, u'graph.js'))
+  index_path = os.path.join(base, u'templates/dirty_index.html')
+  index_new_path = os.path.join(directory, u'index.html')
 
-  base_static = base + u'/static'
-  static = directory +u'/static'
+  shutil.copy(index_path, index_new_path)
+
+  base_static = os.path.join(base, u'static')
+  static = os.path.join(directory, u'static')
   if not os.path.exists(static):
     os.makedirs(static)
 
-  shutil.copy(base_static + u'/d3/d3.min.js', static + u'/d3.min.js')
-  shutil.copy(base_static + u'/lateral-map.js', static + u'/lateral-map.js')
+  shutil.copy(os.path.join(base_static, u'd3/d3.min.js'),
+              os.path.join(static, u'd3.min.js'))
+  shutil.copy(os.path.join(base_static, u'lateral-map.js'),
+              os.path.join(static, u'lateral-map.js'))
 
-  print(u'open {0:s}'.format(directory + u'/index.html'))
+  print(u'open {0:s}'.format(os.path.join(directory, u'index.html')))
 
 
 if __name__ == u'__main__':
@@ -65,33 +69,38 @@ if __name__ == u'__main__':
   subparsers = parser.add_subparsers()
 
   # elastic-search to graph
-  sub_e2g = subparsers.add_parser(u'e2g', help=u'elastic to graph')
+  sub_e2g_help = (
+      u'Retrieve events from elasticsearch database and create a graph based on '
+      u'them.')
+  sub_e2g = subparsers.add_parser(u'e2g', help=sub_e2g_help)
   sub_e2g.set_defaults(routine=ElasticToGraph)
 
-  host_help = u'elastic-search ip adress (127.0.0.1)'
+  host_help = u'Elastic-search ip adress (127.0.0.1).'
   sub_e2g.add_argument(
       u'--host', action=u'store', default=u'127.0.0.1', help=host_help)
-  port_help = u'elastic-search port (9200)'
+  port_help = u'Elastic-search port (9200).'
   sub_e2g.add_argument(
       u'--port', action=u'store', type=int, default=9200, help=port_help)
 
-  javascript_help = u'output javascript code'
+  javascript_help = u'Output javascript code instead of JSON. Used in render.'
+
   sub_e2g.add_argument(
       u'--javascript', action=u'store_true', help=javascript_help)
 
-  verbose_help = u'print progress'
+  verbose_help = u'Print progress.'
   sub_e2g.add_argument(u'--verbose', action=u'store_true', help=verbose_help)
 
-  output_help = u'output file name'
+  output_help = u'Output file name.'
   sub_e2g.add_argument(
       u'--output', action=u'store', help=output_help, required=True)
 
-  indices_help = u'elastic-search indices to parse'
+  indices_help = u'Elastic-search indices to parse.'
   sub_e2g.add_argument(
       u'indices', metavar=u'index', nargs=u'+', help=indices_help)
 
-
-  sub_f2g = subparsers.add_parser(u'f2g', help=u'file(s) to graph')
+  sub_f2g_help = (
+      u'Retrieve events from json_line file and create a graph based on them.')
+  sub_f2g = subparsers.add_parser(u'f2g', help=sub_f2g_help)
   sub_f2g.set_defaults(routine=FileToGraph)
 
   sub_f2g.add_argument(
@@ -99,21 +108,20 @@ if __name__ == u'__main__':
 
   sub_f2g.add_argument(u'--verbose', action=u'store_true', help=verbose_help)
 
-  input_help = u'input file in json_line format'
+  input_help = u'Input file in json_line format. See plaso json_line.'
   sub_f2g.add_argument(u'input', action=u'store', help=input_help)
 
   sub_f2g.add_argument(u'output', action=u'store', help=output_help)
 
-  render_help = u'creates html visualization'
+  render_help = u'Creates html visualization.'
   sub_render = subparsers.add_parser(u'render', help=render_help)
   sub_render.set_defaults(routine=Render)
 
-  input_help = u'javascript with graph (use --javascript flag with f2g or e2g)'
+  input_help = u'Javascript with graph (use --javascript flag with f2g or e2g).'
   sub_render.add_argument(u'input', action=u'store', help=input_help)
 
-  render_help = u'directory to store visualization'
+  render_help = u'Directory to store the visualization and required files.'
   sub_render.add_argument(u'output', action=u'store', help=render_help)
-
 
   parsed_args = parser.parse_args()
   parsed_args.routine(parsed_args)

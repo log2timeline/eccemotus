@@ -1,17 +1,15 @@
 # -*- coding: utf-8 -*-
 """Web server interface for eccemotus.py library.
 
-This code also serves as an example usage of this library. Be aware that it
-lacks a lot of graceful error handling.
+This code also serves as an example usage of eccemotus library. Be aware that it
+lacks a lot of graceful error handling and recovery.
 """
-
-from __future__ import print_function
 
 import json
 import sqlite3
 from flask import Flask, g, jsonify, redirect, render_template, request, url_for
 
-import eccemotus.eccemotus as E
+from eccemotus import eccemotus
 
 app = Flask(__name__)
 
@@ -22,8 +20,6 @@ def GetDatabase():
 
   Returns:
     sqlite3.Connection: access to database.
-
-  Returns database object.
   """
   database = getattr(g, u'database', None)
   if database is None:
@@ -61,11 +57,13 @@ def Prepare():
   database.commit()
   return u'prepared'
 
+# Views.
+
 @app.route(u'/graph/<graph_id>')
 def ViewGraph(graph_id):
   """Returns view for specific graph.
 
-  Actual graph data is fetched with javascript and call to GetGraph.
+  Actual graph data is fetched with javascript and call to GetGraph api.
   """
   database = GetDatabase()
   c = database.cursor()
@@ -87,10 +85,16 @@ def GetGraph(graph_id):
   if len(graph) != 1:
     return None
 
-  return jsonify(graph=json.loads(graph[0][u'graph']))
+  # The string is not unicode because Row cursor can not be indexed with
+  # unicode.
+  return jsonify(graph=json.loads(graph[0]['graph']))
 
 def ListGraphs():
-  """Returns list of graphs in database."""
+  """Lists graphs in database
+
+  Returns:
+    list[dict]: graphs in database.
+  """
   database = GetDatabase()
   c = database.cursor()
   c.execute(u'SELECT id, name from graphs')
@@ -124,8 +128,8 @@ def Index():
     if request.form[u'submit'] == u'file':
       fname = request.form[u'filename']
       graph_name = request.form[u'name']
-      data_generator = E.FileDataGenerator(fname, verbose=True)
-      graph = E.GetGraph(data_generator, verbose=True)
+      data_generator = eccemotus.FileDataGenerator(fname, verbose=True)
+      graph = eccemotus.GetGraph(data_generator, verbose=True)
       graph_JSON = json.dumps(graph.MinimalSerialize())
       AddGraph(graph_name, graph_JSON)
       return redirect(url_for(u'Index'))
@@ -136,10 +140,11 @@ def Index():
       port = int(request.form[u'port'])
       raw_indexes = request.form[u'indexes'].replace('\n', ' ')
       indexes = [el_index for el_index in raw_indexes.split() if el_index]
-      client = E.GetClient(ip, port)
+      client = eccemotus.GetClient(ip, port)
 
-      data_generator = E.ElasticDataGenerator(client, indexes, verbose=True)
-      graph = E.GetGraph(data_generator, verbose=True)
+      data_generator = eccemotus.ElasticDataGenerator(client, indexes,
+                                                      verbose=True)
+      graph = eccemotus.GetGraph(data_generator, verbose=True)
       graph_JSON = json.dumps(graph.MinimalSerialize())
       AddGraph(graph_name, graph_JSON)
       return redirect(url_for(u'Index'))
