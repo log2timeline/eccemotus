@@ -6,11 +6,17 @@ import argparse
 import json
 import os
 import shutil
-from  eccemotus import eccemotus   # pylint: disable=no-name-in-module
+from  eccemotus import eccemotus_lib as eccemotus  # pylint: disable=no-name-in-module
 
 
 def CreateGraph(generator, args):
-  """Handles creating and saving graph from data generator."""
+  """Handles creating and saving graph from data generator.
+
+  Args:
+    generator (iterable[dict]): plaso events, usually
+        eccemotus.FileDataGenerator or eccemotus.ElasticDataGenerator.
+    args (argparse.Namespace): command line arguments.
+  """
   graph = eccemotus.GetGraph(generator, args.verbose)
   serialized = graph.MinimalSerialize()
 
@@ -24,20 +30,32 @@ def CreateGraph(generator, args):
 
 
 def ElasticToGraph(args):
-  """Computes lateral graph from data at elastic-search."""
+  """Computes lateral graph based on data from elastic-search.
+
+  Args:
+    args (argparse.Namespace): command line arguments.
+  """
   client = eccemotus.GetClient(args.host, args.port)
   generator = eccemotus.ElasticDataGenerator(client, args.indices, args.verbose)
   CreateGraph(generator, args)
 
 
 def FileToGraph(args):
-  """Computes lateral graph from data at file."""
+  """Computes lateral graph based on data from file.
+
+  Args:
+    args (argparse.Namespace): command line arguments.
+  """
   generator = eccemotus.FileDataGenerator(args.input, True)
   CreateGraph(generator, args)
 
 
 def Render(args):
-  """Creates a directory html visualization of graph."""
+  """Creates a directory with a html visualization of graph.
+
+  Args:
+    args (argparse.Namespace): command line arguments.
+  """
   directory = args.output
   base = os.path.dirname(os.path.abspath(__file__))
   base = os.path.join(base, u'eccemotus_ui')
@@ -70,8 +88,8 @@ if __name__ == u'__main__':
 
   # elastic-search to graph
   sub_e2g_help = (
-      u'Retrieve events from elasticsearch database and create a graph based on '
-      u'them.')
+      u'Retrieve events from elasticsearch database and create a graph based '
+      u'on them.')
   sub_e2g = subparsers.add_parser(u'e2g', help=sub_e2g_help)
   sub_e2g.set_defaults(routine=ElasticToGraph)
 

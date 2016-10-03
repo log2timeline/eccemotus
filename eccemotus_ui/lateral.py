@@ -9,7 +9,7 @@ import json
 import sqlite3
 from flask import Flask, g, jsonify, redirect, render_template, request, url_for
 
-from eccemotus import eccemotus
+from eccemotus import eccemotus_lib as eccemotus
 
 app = Flask(__name__)
 
@@ -40,6 +40,9 @@ def Drop():
   """Drops table with graphs.
 
   This can be used, if you want to "reset" your database.
+
+  Return:
+    str: u'dropped'.
   """
   database = GetDatabase()
   c = database.cursor()
@@ -49,7 +52,11 @@ def Drop():
 
 @app.route(u'/prepare')
 def Prepare():
-  """Creates table for graphs in database."""
+  """Creates table for graphs in database.
+
+  Returns:
+    str: u'prepared'.
+  """
   database = GetDatabase()
   c = database.cursor()
   c.execute((u'''CREATE TABLE IF NOT EXISTS graphs'''
@@ -64,6 +71,12 @@ def ViewGraph(graph_id):
   """Returns view for specific graph.
 
   Actual graph data is fetched with javascript and call to GetGraph api.
+
+  Args:
+    graph_id (str|int): id of graph to retrieve from the database.
+
+  Returns:
+    str: rendered template with context.
   """
   database = GetDatabase()
   c = database.cursor()
@@ -77,7 +90,14 @@ def ViewGraph(graph_id):
 
 @app.route(u'/api/graph/<graph_id>')
 def GetGraph(graph_id):
-  """Returns graph data for graph with graph_id."""
+  """Returns graph data for graph with graph_id.
+
+  Args:
+    graph_id (str|int): id of graph to retrieve from the database.
+
+  Returns:
+    str: jsonified graph data.
+  """
   database = GetDatabase()
   c = database.cursor()
   c.execute(u'SELECT id, name, graph from graphs where id = ?', (graph_id, ))
@@ -123,6 +143,9 @@ def Index():
   This will not sent the file to server, it just provides the file name.
   Adding from elasticsearch is possible only for ip/port that does not require
   authentication and is accessible to server (preferably on the same machine).
+
+  Returns:
+    str: rendered template with context.
   """
   if request.method == u'POST':
     if request.form[u'submit'] == u'file':
