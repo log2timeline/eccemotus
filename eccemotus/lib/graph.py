@@ -10,22 +10,21 @@ from collections import defaultdict
 from collections import namedtuple
 import logging
 
-from eccemotus.lib.parsers import utils
+from eccemotus.lib import event_data
 
 
 class Graph(object):
   """Very light-weight implementation of property graph.
 
   This implementation is not meant to be a general property graph. It is meant
-  for storing information about lateral movement. Property graph is a set of
+  for storing event data about lateral movement. Property graph is a set of
   nodes and edges, where each edge and each node can have any number of
   key/value properties associated with them.
 
   In our case, we have a very specific set of properties.
   nodes:
     id: Automatic generated unique id
-    type: Type/name of the node
-          These correspond to information names in parsers.parsers module
+    type: Type/name of the node. These correspond to EventDatum.GetName().
     value: Value that the node has.
   Pair (tuple) (type, value) is also unique identifier of a node.
 
@@ -34,15 +33,15 @@ class Graph(object):
     target: Id of a target node
     type: Type of an edge
       Usual types are
-        has: Machine has an user
-        is: Machine is ip_address (this is not necessarily true for the whole
+        "has": Machine has an user
+        "is": Machine is ip_address (this is not necessarily true for the whole
             time)
-        access: remote connection
+        "access": remote connection
     events:
       List of event ids and timestamps. Those events are responsible for
       creation of given edge. Events can be found by id in timesketch or
       filtered by timestamps.
-  In fact, every edge is a graph represents multiple edges created by multiple
+  In fact, every edge in a graph represents multiple edges created by multiple
   events. Those events are specified in events property of this node.
 
   In theory, edges are directed. In practice, only place where it makes a
@@ -58,30 +57,58 @@ class Graph(object):
   EDGE_IS = u'is'
   EDGE_ACCESS = u'access'
 
-  # Rules describing which pairs of information should create which type of
+  # Rules describing which pairs of event_data should create which type of
   # edge.
   Rule = namedtuple(u'Rule', [u'source', u'target', u'type'])
-  RULES = [
-      Rule(utils.SOURCE_MACHINE_IP, utils.SOURCE_MACHINE_NAME, EDGE_IS),
-      Rule(utils.SOURCE_USER_NAME, utils.SOURCE_USER_ID, EDGE_IS),
-      Rule(utils.TARGET_MACHINE_NAME, utils.TARGET_MACHINE_IP, EDGE_IS),
-      Rule(utils.TARGET_USER_NAME, utils.TARGET_USER_ID, EDGE_IS),
-      Rule(utils.SOURCE_MACHINE_IP, utils.SOURCE_USER_NAME, EDGE_HAS),
-      Rule(utils.SOURCE_MACHINE_IP, utils.SOURCE_USER_ID, EDGE_HAS),
-      Rule(utils.SOURCE_MACHINE_NAME, utils.SOURCE_USER_NAME, EDGE_HAS),
-      Rule(utils.SOURCE_MACHINE_NAME, utils.SOURCE_USER_ID, EDGE_HAS),
-      Rule(utils.TARGET_MACHINE_IP, utils.TARGET_USER_NAME, EDGE_HAS),
-      Rule(utils.TARGET_MACHINE_IP, utils.TARGET_USER_ID, EDGE_HAS),
-      Rule(utils.TARGET_MACHINE_NAME, utils.TARGET_USER_NAME, EDGE_HAS),
-      Rule(utils.TARGET_MACHINE_NAME, utils.TARGET_USER_ID, EDGE_HAS),
-  ]
+  RULES = (
+      Rule(
+          event_data.Ip(source=True), event_data.MachineName(source=True),
+          EDGE_IS),
+      Rule(
+          event_data.UserName(source=True), event_data.UserId(source=True),
+          EDGE_IS),
+      Rule(
+          event_data.MachineName(target=True), event_data.Ip(target=True),
+          EDGE_IS),
+      Rule(
+          event_data.UserName(target=True), event_data.UserId(target=True),
+          EDGE_IS),
+      Rule(
+          event_data.Ip(source=True), event_data.UserName(source=True),
+          EDGE_HAS),
+      Rule(
+          event_data.Ip(source=True), event_data.UserId(source=True), EDGE_HAS),
+      Rule(
+          event_data.MachineName(source=True), event_data.UserName(source=True),
+          EDGE_HAS),
+      Rule(
+          event_data.MachineName(source=True), event_data.UserId(source=True),
+          EDGE_HAS),
+      Rule(
+          event_data.Ip(target=True), event_data.UserName(target=True),
+          EDGE_HAS),
+      Rule(
+          event_data.Ip(target=True), event_data.UserId(target=True), EDGE_HAS),
+      Rule(
+          event_data.MachineName(target=True), event_data.UserName(target=True),
+          EDGE_HAS),
+      Rule(
+          event_data.MachineName(target=True), event_data.UserId(target=True),
+          EDGE_HAS)
+  )
+
+  # List of things that should be used as remote source/target in decreasing
+  # priority.
+  DATA_PRIORITY = (
+      event_data.UserName, event_data.UserId, event_data.MachineName,
+      event_data.Ip, event_data.Plaso)
 
   def __init__(self):
     """Initialize empty graph."""
     self.edges = []
-    self.edges_ids = defaultdict(int)  # Provides fast index for edges
+    self.edges_ids = defaultdict(int)  # Provides fast index for edges.
     self.nodes = []
-    self.nodes_ids = defaultdict(int)  # Provides fast index for nodes
+    self.nodes_ids = defaultdict(int)  # Provides fast index for nodes.
 
   def GetAddNode(self, node_type, node_value):
     """Return node's id with given type and value.
@@ -89,8 +116,7 @@ class Graph(object):
     If the node does not exist, it is created.
 
     Args:
-      node_type (str): type of node derived from information names at
-          parser.py.
+      node_type (str): type of node derived from event datum names.
       node_value (str): value of the node.
 
     Returns:
@@ -119,136 +145,104 @@ class Graph(object):
     edge = (source_id, target_id, edge_type)
     if edge in self.edges_ids:
       edge_id = self.edges_ids[edge]
-      self.edges[edge_id][u'events'].append({u'id': event_id,
-                                             u'timestamp': timestamp})
+      event = {
+          u'id': event_id,
+          u'timestamp': timestamp
+      }
+      self.edges[edge_id][u'events'].append(event)
 
     else:
       edge_id = len(self.edges)
       self.edges_ids[edge] = edge_id
+      event = {
+          u'id': event_id,
+          u'timestamp': timestamp
+      }
       self.edges.append({
           u'source': source_id,
           u'target': target_id,
           u'type': edge_type,
-          u'events': [({u'id': event_id,
-                        u'timestamp': timestamp})],
+          u'events': [event],
       })
 
   @classmethod
-  def GetRemoteSource(cls, event):
-    """Return most specific remote_source.
+  def GetRemote(cls, data, source=False, target=False):
+    """Return most specific remote source/target.
 
     Knowing that the remote connection was from user Dean is better than knowing
     only the ip address.
-    Note that user name and user id is extended by machine identifier.
+    Note that user name and user id is extended by machine identifier so the
+    information about machine is not lost.
 
     Args:
-      event (dict[str, str]): event information values indexed by their
-          information names.
+      data (event_data.EventData): data about event.
+      source (bool): whether to find source.
+      target (bool): whether to find target.
 
     Returns:
-      tuple: containing:
-        str|None: type of most specific source. None if no source is present.
-        str|None: value of most specific source. None if no source is present.
+      event_data.EventDatum|None: most specific event data about source/target.
+          None if no event data were found.
+
+    Exactly one of source, target arguments should be True. Otherwise the
+    function do not raise an error, but it does not make sense.
     """
+    for data_class in cls.DATA_PRIORITY:
+      raw_datum = data_class(source=source, target=target)
+      event_datum = data.Get(raw_datum)
+      if event_datum:
+        return event_datum
+    return None
 
-    # List of things that should be used as remote source in decreasing
-    # priority.
-    REMOTE_SOURCE = [utils.SOURCE_USER_NAME, utils.SOURCE_USER_ID,
-                     utils.SOURCE_MACHINE_NAME, utils.SOURCE_MACHINE_IP,
-                     utils.SOURCE_PLASO]
-    for key in REMOTE_SOURCE:
-      if key in event:
-        return key, event[key]
-    return None, None
-
-  @classmethod
-  def GetRemoteTarget(cls, event):
-    """Return best most specific remote_target.
-
-    Knowing that the remote connection was to user Dean is better than knowing
-    only the ip address.
-    Note that user name and user id is extended by machine identifier.
-
-    Args:
-      event (dict[str, str]): event information values indexed by their
-          information names.
-
-    Returns:
-      tuple: containing:
-        str|None: type of most specific target. None if no target is present.
-        str|None: value of most specific target. None if no target is present.
-    """
-
-    # List of things that should be used as remote target in decreasing
-    # priority.
-    REMOTE_TARGET = [utils.TARGET_USER_NAME, utils.TARGET_USER_ID,
-                     utils.TARGET_MACHINE_NAME, utils.TARGET_MACHINE_IP,
-                     utils.TARGET_PLASO]
-    for key in REMOTE_TARGET:
-      if key in event:
-        return key, event[key]
-    return None, None
 
   def AddData(
-      self, source_type, source_value, target_type, target_value, edge_type,
-      event_time, event_id):
+      self, source_datum, target_datum, edge_type, event_time, event_id):
     """Add edge with corresponding nodes to graph.
 
     This ensures that required nodes are in the graph and creates an edge
     between them.
-    Note that source_type is not exactly the node type. It has to be striped of
-    prefix "source:" or "target" by utils.GetNodeTypeFromInformation()
 
     Args:
       edge_type (str): edge type.
       event_id (int|str): event identifier.
       event_time (str): timestamp for event.
-      source_type (str): information type of source node. See parsers.py.
-      source_value (str): value of source node.
-      target_type (str): information type of target node. See parsers.py.
-      target_value (str): value of target node.
+      source_datum (event_data.EventDatum): event datum about source node.
+      target_datum (event_data.EventDatum): event datum about target node.
     """
 
-    source_node_type = utils.GetNodeTypeFromInformation(source_type)
-    source_id = self.GetAddNode(source_node_type, source_value)
-    target_node_type = utils.GetNodeTypeFromInformation(target_type)
-    target_id = self.GetAddNode(target_node_type, target_value)
+    source_id = self.GetAddNode(source_datum.GetName(), source_datum.value)
+    target_id = self.GetAddNode(target_datum.GetName(), target_datum.value)
     self.AddEdge(source_id, target_id, edge_type, event_time, event_id)
 
-  def AddEvent(self, event):
+  def AddEventData(self, parsed_event):
     """Processes one parsed event and encodes it to edges and nodes.
 
     Encoding is based on simple rules stored at RULES. If event contains
-    information with key/name event.source and event.target, a new edge will be
+    event_data with key/name event.source and event.target, a new edge will be
     created with type rule.type.
 
     Args:
-      event (dict[str, str]): parsed event. Result of utils.parse()
-          from parsers.py.
+      parsed_event (event_data.EventData): event data about event to be
+          translated to graph.
     """
-
     # Evaluate rules from RULES.
     for rule in self.__class__.RULES:
-      source_value = event.get(rule.source)
-      target_value = event.get(rule.target)
-      if not (source_value and target_value):
-        continue
-      self.AddData(rule.source, source_value, rule.target, target_value,
-                   rule.type, event[utils.TIMESTAMP], event[utils.EVENT_ID])
+      source_datum = parsed_event.Get(rule.source)
+      target_datum = parsed_event.Get(rule.target)
+      if source_datum and target_datum:
+        self.AddData(
+            source_datum, target_datum, rule.type, parsed_event.timestamp,
+            parsed_event.event_id)
 
     # Rules for access edge.
-
-    remote_source_tuple = self.__class__.GetRemoteSource(event)
-    remote_source_type, remote_source_value = remote_source_tuple
-    remote_target_tuple = self.__class__.GetRemoteTarget(event)
-    remote_target_type, remote_target_value = remote_target_tuple
-    if remote_source_value and remote_target_value:
-      self.AddData(remote_source_type, remote_source_value, remote_target_type,
-                   remote_target_value, self.__class__.EDGE_ACCESS,
-                   event[utils.TIMESTAMP], event[utils.EVENT_ID])
+    remote_source = self.__class__.GetRemote(parsed_event, source=True)
+    remote_target = self.__class__.GetRemote(parsed_event, target=True)
+    if remote_source and remote_target:
+      self.AddData(
+          remote_source, remote_target, self.__class__.EDGE_ACCESS,
+          parsed_event.timestamp, parsed_event.event_id)
 
   def MinimalSerialize(self):
-    """Serialized only required information for visualization."""
+    """Serialized only required event_data for visualization."""
     return {u'nodes': self.nodes, u'links': self.edges}
 
 
@@ -290,12 +284,12 @@ class Node(object):
     """
     return (self.type, self.value)
 
-def CreateGraph(data, verbose=False):
-  """Creates graph from data.
+def CreateGraph(events_data, verbose=False):
+  """Creates graph from events_data.
 
   Args:
-    data (iterable): parsed plaso events. data can be any iterable (list),
-        preferably generator, because of memory optimization.
+    events_data (iterable[event_data.EventData]): data can be any iterable
+        (list), preferably generator, because of memory optimization.
 
   Returns:
     Graph: property graph for events.
@@ -303,11 +297,10 @@ def CreateGraph(data, verbose=False):
   logger = logging.getLogger(__name__)
   graph = Graph()
   VERBOSE_INTERVAL = 1000
-  for i, event in enumerate(data):
-    graph.AddEvent(event)
+  for i, event in enumerate(events_data):
+    graph.AddEventData(event)
     if not i % VERBOSE_INTERVAL and verbose:
-      logger.info(
-          u'Nodes:{0:d} Edges: {1:d}'.format(len(graph.nodes),
-                                             len(graph.edges)))
+      log_message = u'Nodes:{0:d} Edges: {1:d}'
+      logger.info(log_message.format(len(graph.nodes), len(graph.edges)))
 
   return graph

@@ -9,14 +9,6 @@ from eccemotus.lib.parsers import utils
 class UtilsTest(unittest.TestCase):
   """Test utils """
 
-  def test_GetNodeTypeFromInformation(self):
-    """Test GetNodeTypeFromInformation."""
-
-    nodet_type = utils.GetNodeTypeFromInformation(u'prefix:type')
-    expected_node_type = u'type'
-    self.assertEqual(nodet_type, expected_node_type)
-
-
   def test_FirstTrue(self):
     """Test FirstTrue."""
 

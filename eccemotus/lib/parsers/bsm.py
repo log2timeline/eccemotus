@@ -3,6 +3,7 @@
 
 import re
 
+from eccemotus.lib import event_data
 from eccemotus.lib.parsers import manager
 from eccemotus.lib.parsers import parser_interface
 from eccemotus.lib.parsers import utils
@@ -24,20 +25,20 @@ class BsmEventParser(parser_interface.ParserInterface):
       event (dict): dict serialized plaso event.
 
     Returns:
-      dict[str, str]: information parsed from event.
+      event_data.EventData: event data parsed from event.
     """
 
-    data = {}
-    data[utils.TARGET_PLASO] = utils.GetImageName(event)
+    data = event_data.EventData()
+    data.Add(event_data.Plaso(target=True, value=utils.GetImageName(event)))
     event_type = event.get(u'event_type')
     message = event.get(u'message', '')
     if not (event_type == u'OpenSSH login (32800)' and
             cls.SUCCESS_REGEXP.match(message)):
-      return {}
+      return event_data.EventData()
 
     user = cls.USER_REGEXP.search(message)
     if user:
-      data[utils.TARGET_USER_NAME] = user.group(1)
+      data.Add(event_data.UserName(target=True, value=user.group(1)))
 
     raw_tokens = cls.TOKEN_REGEXP.search(message)
     token_dict = {}
@@ -46,11 +47,10 @@ class BsmEventParser(parser_interface.ParserInterface):
       for token in tokens:
         key, value = token.strip(u' )').split(u'(')
         token_dict[key] = value
-    data[utils.SOURCE_MACHINE_IP] = token_dict.get(u'terminal_ip')
-    data[utils.TARGET_USER_ID] = token_dict.get(u'uid')
 
-    # NOTE: other potentially interesting things:
-    # aid, euid, egid, uid, gid, pid, session_id, terminal_port, terminal_ip
+    machine_ip = token_dict.get(u'terminal_ip')
+    data.Add(event_data.Ip(source=True, value=machine_ip))
+    data.Add(event_data.UserId(target=True, value=token_dict.get(u'uid')))
 
     return data
 

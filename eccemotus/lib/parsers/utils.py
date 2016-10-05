@@ -1,48 +1,19 @@
 # -*- coding: utf-8 -*-
-"""Helpful constants and functions for parsers."""
+"""Contains useful functions for parsers."""
 
-# Canonical names for interesting information (fields).
-# _PLASO is a name of a plaso file that contained the log. SOURCE_PLASO means
-# there was a connection FROM the machine that stored the log (plaso file
-# identifies the source) and TARGET_PLASO  means there was a connection TO the
-# machine that stared the log (plaso file identifies the target).
-EVENT_ID = u'event_id'
-TIMESTAMP = u'timestamp'
-
-SOURCE_MACHINE_IP = u'source:ip'
-SOURCE_MACHINE_NAME = u'source:machine_name'
-SOURCE_PLASO = u'source:plaso'
-SOURCE_USER_ID = u'source:user_id'
-SOURCE_USER_NAME = u'source:user_name'
-
-TARGET_MACHINE_IP = u'target:ip'
-TARGET_MACHINE_NAME = u'target:machine_name'
-TARGET_PLASO = u'target:plaso'
-TARGET_USER_ID = u'target:user_id'
-TARGET_USER_NAME = u'target:user_name'
-
-# Black lists for common invalid or uninteresting field values.
-BASIC_BLACK_LIST = {
-    u'ip': [u'127.0.0.1', u'localhost', u'-', u'::1'],
-    u'machine_name': [u'127.0.0.1', u'localhost', u'-'],
-    u'user_name': [u'N/A', u'-'],
-}
-BLACK_LIST = {}
-for prefix in [u'source', u'target']:
-  for sufix in BASIC_BLACK_LIST.keys():
-    BLACK_LIST[prefix + u':' + sufix] = BASIC_BLACK_LIST[sufix]
-
-# Set of handy helper functions.
-def GetNodeTypeFromInformation(information):
-  """Return type of information.
+def FirstValidDatum(data, default=None):
+  """Return
 
   Args:
-      information (string): canonical name of interesting field.
-
-  Returns:
-    str: part of information string after ":".
+    data (list[event_data.EventDatum]): list of event data.
+    default (object): returned in case no no valid datum was found.
   """
-  return information.split(u':')[1]
+  for datum in data:
+    if not datum:
+      continue
+    if datum.value:
+      return datum.value
+  return default
 
 
 def FirstTrue(values, default=None):

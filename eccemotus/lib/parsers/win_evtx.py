@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Parser for windows:evtx:record data_type."""
 
+from eccemotus.lib import event_data
 from eccemotus.lib.parsers import manager
 from eccemotus.lib.parsers import parser_interface
 from eccemotus.lib.parsers import utils
@@ -12,54 +13,56 @@ class WinEvtxEventParser(parser_interface.ParserInterface):
 
   @classmethod
   def Parse(cls, event):
-    """Parsing information based on position in event.strings.
+    """Parsing event data based on position in event.strings.
 
     Args:
       event (dict): dict serialized plaso event.
 
     Returns:
-      dict[str, str]: information parsed from event.
+      event_data.EventData: event data parsed from event.
     """
 
-    data = {}
+    data = event_data.EventData()
     event_id = event.get(u'event_identifier')
     strings = event.get(u'strings')
     if not strings:
-      return {}
+      return event_data.EventData()
 
     if not isinstance(strings, list):
       strings = eval(strings)  # pylint: disable=eval-used
 
     if event_id == 4624:  # An account was successfully logged on.
-      data[utils.SOURCE_PLASO] = utils.GetImageName(event)
-      data[utils.SOURCE_MACHINE_NAME] = event[u'computer_name']
+      data.Add(event_data.Plaso(value=utils.GetImageName(event), source=True))
+      data.Add(event_data.MachineName(
+          source=True, value=event.get(u'computer_name', '')))
       field_mapper = {
-          utils.SOURCE_USER_ID: 0,
-          utils.SOURCE_USER_NAME: 1,
-          utils.TARGET_USER_ID: 4,
-          utils.TARGET_USER_NAME: 5,
-          utils.TARGET_MACHINE_NAME: 11,
-          utils.TARGET_MACHINE_IP: 18,
+          event_data.UserId(source=True): 0,
+          event_data.UserName(source=True): 1,
+          event_data.UserId(target=True): 4,
+          event_data.UserName(target=True): 5,
+          event_data.MachineName(target=True): 11,
+          event_data.Ip(target=True): 18,
       }
-      for field_name, field_index in field_mapper.items():
-        data[field_name] = strings[field_index]
-      return data
+      for datum, field_index in field_mapper.items():
+        datum.value = strings[field_index]
+        data.Add(datum)
 
     elif event_id == 4648:  # Login with certificate.
       field_mapper = {
-          utils.SOURCE_USER_ID: 0,
-          utils.SOURCE_USER_NAME: 1,
-          utils.TARGET_USER_NAME: 5,
-          utils.TARGET_MACHINE_NAME: 8,
-          utils.TARGET_MACHINE_IP: 12,
+          event_data.UserId(source=True): 0,
+          event_data.UserName(source=True): 1,
+          event_data.UserName(target=True): 5,
+          event_data.MachineName(target=True): 8,
+          event_data.Ip(target=True): 12,
       }
 
-      for field_name, field_index in field_mapper.items():
-        data[field_name] = strings[field_index]
-      data[utils.SOURCE_MACHINE_NAME] = event[u'computer_name']
-      return data
+      for datum, field_index in field_mapper.items():
+        datum.value = strings[field_index]
+        data.Add(datum)
 
-    else:
-      return {}
+      data.Add(event_data.MachineName(
+          source=True, value=event[u'computer_name']))
+
+    return data
 
 manager.ParserManager.RegisterParser(WinEvtxEventParser)

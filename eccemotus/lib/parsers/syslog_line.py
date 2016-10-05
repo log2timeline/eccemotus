@@ -3,6 +3,7 @@
 
 import re
 
+from eccemotus.lib import event_data
 from eccemotus.lib.parsers import manager
 from eccemotus.lib.parsers import parser_interface
 from eccemotus.lib.parsers import utils
@@ -23,17 +24,17 @@ class SysLogParser(parser_interface.ParserInterface):
       event (dict): dict serialized plaso event.
 
     Returns:
-      dict[str, str]: information parsed from event.
+      event_data.EventData: event data parsed from event.
     """
     match = cls.MATCH_REGEXP.match(event.get(u'message', ''))
     if not match:
-      return {}
+      return event_data.EventData()
 
-    data = {}
-    data[utils.TARGET_PLASO] = utils.GetImageName(event)
-    data[utils.TARGET_USER_NAME] = match.group(u'user')
-    data[utils.SOURCE_MACHINE_IP] = match.group(u'ip')
-    # NOTE: I do not care for port right now.
+    data = event_data.EventData()
+    data.Add(event_data.Plaso(target=True, value=utils.GetImageName(event)))
+    data.Add(event_data.UserName(target=True, value=match.group(u'user')))
+    data.Add(event_data.Ip(source=True, value=match.group(u'ip')))
+
     return data
 
 manager.ParserManager.RegisterParser(SysLogParser)

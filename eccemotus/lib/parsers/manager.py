@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 """Parsers management.
 
-Provides way for parsing remote access related information from plaso logs.
+Provides way for parsing remote access related event data from plaso logs.
 Use ParserManager.Parse(event) and it will extract interesting fields in context
 of lateral movement from plaso event.
 
 It is parser's responsibility to register to manager via RegisterParser method.
 """
 
+from eccemotus.lib import event_data
 from eccemotus.lib.parsers import utils
 
 class ParserManager(object):
@@ -56,13 +57,12 @@ class ParserManager(object):
     Parser is chosen based on data_type of event.
     After the parsing, some enhancements are done to data.
     Users (names and ids) are extended by first reasonable machine
-    identifier. Timestamps and event_id are added. Information is checked
-    against the BLACKLIST.
+    identifier. Timestamps and event_id are added.
 
     Args:
-        event: Loaded plaso json (dict).
+        event (dict): dict serialize plaso event.
     Returns:
-        dict: information names and values.
+        event_data.EventData: event data extracted from event.
     """
     raw_data_type = event.get(u'data_type')
     data_type = None
@@ -73,37 +73,37 @@ class ParserManager(object):
       data_type = raw_data_type.get(u'stream')
 
     if data_type in cls._parser_clases:
-      parsed = cls._parser_clases[data_type].Parse(event)
-      for key in parsed.keys():
-        if parsed[key] in utils.BLACK_LIST.get(key, []):
-          del parsed[key]
+      parsed_data = cls._parser_clases[data_type].Parse(event)
 
-      if not parsed:
-        return {}
+      if not parsed_data or parsed_data.Empty():
+        return event_data.EventData()
 
-      parsed[u'data_type'] = event[u'data_type']
-      target_id = utils.FirstTrue([
-          parsed.get(utils.TARGET_MACHINE_NAME),
-          parsed.get(utils.TARGET_MACHINE_IP),
-          parsed.get(utils.TARGET_PLASO), u'UNKNOWN'
-      ])
+      parsed_data.event_data_type = data_type
+      target_id = utils.FirstValidDatum([
+          parsed_data.Get(event_data.MachineName(target=True)),
+          parsed_data.Get(event_data.Ip(target=True)),
+          parsed_data.Get(event_data.Plaso(target=True))], default=u'UNKNOWN')
 
-      for key in [utils.TARGET_USER_NAME, utils.TARGET_USER_ID]:
-        if key in parsed:
-          parsed[key] = parsed[key] + u'@' + target_id
+      for inf in [event_data.UserName(target=True),
+                  event_data.UserId(target=True)]:
+        inf = parsed_data.Get(inf)
+        if inf:
+          inf.value += u'@' + target_id
 
-      source_id = utils.FirstTrue([
-          parsed.get(utils.SOURCE_MACHINE_NAME),
-          parsed.get(utils.SOURCE_MACHINE_IP),
-          parsed.get(utils.SOURCE_PLASO), u'UNKNOWN'
-      ])
+      source_id = utils.FirstValidDatum([
+          parsed_data.Get(event_data.MachineName(source=True)),
+          parsed_data.Get(event_data.Ip(source=True)),
+          parsed_data.Get(event_data.Plaso(source=True))], default=u'UNKNOWN')
 
-      for key in [utils.SOURCE_USER_NAME, utils.SOURCE_USER_ID]:
-        if key in parsed:
-          parsed[key] = parsed[key] + u'@' + source_id
+      for inf in [event_data.UserName(source=True),
+                  event_data.UserId(source=True)]:
+        inf = parsed_data.Get(inf)
+        if inf:
+          inf.value += u'@' + source_id
 
-      parsed[utils.TIMESTAMP] = event.get(utils.TIMESTAMP)
-      parsed[utils.EVENT_ID] = event.get(u'timesketch_id', cls.GetNextEventId())
-      return parsed
+
+      parsed_data.timestamp = event.get(u'timestamp')
+      parsed_data.event_id = event.get(u'timesketch_id', cls.GetNextEventId())
+      return parsed_data
     else:
-      return {}
+      return event_data.EventData()

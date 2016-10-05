@@ -3,6 +3,7 @@
 
 import re
 
+from eccemotus.lib import event_data
 from eccemotus.lib.parsers import manager
 from eccemotus.lib.parsers import parser_interface
 from eccemotus.lib.parsers import utils
@@ -24,17 +25,18 @@ class SysLogSshParser(parser_interface.ParserInterface):
       event (dict): dict serialized plaso event.
 
     Returns:
-      dict[str, str]: information parsed from event.
+      event_data.EventData: event data parsed from event.
     """
-    data = {}
-    data[utils.TARGET_PLASO] = utils.GetImageName(event)
+    data = event_data.EventData()
     match = cls.MATCH_REGEXP.match(event.get(u'message', u''))
     if not match:
-      return {}
+      return event_data.EventData()
 
-    data[utils.TARGET_MACHINE_NAME] = event.get(u'hostname', u'-')
-    data[utils.TARGET_USER_NAME] = match.group(u'user')
-    data[utils.SOURCE_MACHINE_IP] = match.group(u'ip')
+    data.Add(event_data.Plaso(target=True, value=utils.GetImageName(event)))
+    data.Add(event_data.MachineName(
+        target=True, value=event.get(u'hostname', u'-')))
+    data.Add(event_data.UserName(target=True, value=match.group(u'user')))
+    data.Add(event_data.Ip(source=True, value=match.group(u'ip')))
     # NOTE I do not care for authentication method nor pid.
     return data
 

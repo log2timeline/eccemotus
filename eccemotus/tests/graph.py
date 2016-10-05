@@ -3,8 +3,8 @@
 
 import unittest
 
+from eccemotus.lib import event_data
 from eccemotus.lib import graph as graph_lib
-from eccemotus.lib.parsers import utils
 
 class GraphTest(unittest.TestCase):
   """Test Graph."""
@@ -37,20 +37,19 @@ class GraphTest(unittest.TestCase):
     self.assertEqual(graph.nodes[0], node1.ToDict())
     self.assertEqual(len(graph.nodes_ids), 2)
 
-  def test_AddEvent(self):
-    """Test AddEvent."""
+  def test_AddEventData(self):
+    """Test AddEventData."""
     graph = graph_lib.Graph()
-    event = {
-        utils.EVENT_ID: 1,
-        utils.SOURCE_MACHINE_IP: u'192.168.1.11',
-        utils.SOURCE_MACHINE_NAME: u'192.168.1.11',
-        utils.TARGET_USER_NAME: u'dean@acserver',
-        utils.TARGET_MACHINE_NAME: u'acserver',
-        utils.TARGET_PLASO:
-        u'acserver.dd/images/work/vlejd/home/google/local/usr/',
-        utils.TIMESTAMP: 1441559606244560}
-
-    graph.AddEvent(event)
+    informations_list = [
+        event_data.Ip(source=True, value=u'192.168.1.11'),
+        event_data.MachineName(source=True, value=u'192.168.1.11'),
+        event_data.UserName(target=True, value=u'dean@acserver'),
+        event_data.MachineName(target=True, value=u'acserver'),
+        event_data.Plaso(target=True, value=u'acserver.dd/images/user/usr/'),
+    ]
+    informations = event_data.EventData(
+        data=informations_list, event_id=1, timestamp=1441559606244560)
+    graph.AddEventData(informations)
 
     self.assertEqual(len(graph.nodes), 4)
     self.assertEqual(len(graph.edges), 3)
@@ -73,59 +72,30 @@ class GraphTest(unittest.TestCase):
     edge = graph.edges[0]
     self.assertEqual(len(edge[u'events']), 2)
 
-  def test_GetRemoteSource(self):
-    """Test GetRemoteSource."""
-    source_types = [utils.SOURCE_USER_NAME, utils.SOURCE_USER_ID,
-                    utils.SOURCE_MACHINE_NAME, utils.SOURCE_MACHINE_IP,
-                    utils.SOURCE_PLASO, u'random_type1', u'random_type2']
-    source_values = [u'value_{0:s}'.format(source) for source in source_types]
-
-    for i in range(5):  # 5 is number of real types.
-      expected_type = source_types[i]
-      expected_value = source_values[i]
-      event = dict(zip(source_types[i:], source_values[i:]))
-      source = graph_lib.Graph.GetRemoteSource(event)
-      self.assertEqual(source, (expected_type, expected_value))
-
-    event = dict(zip(source_types[-2:], source_values[-2:]))
-    expecetd_source = (None, None)
-    source = graph_lib.Graph.GetRemoteSource(event)
-    self.assertEqual(source, expecetd_source)
-
-  def test_GetRemoteTarget(self):
-    """Test GetRemoteTarget."""
-    target_types = [utils.TARGET_USER_NAME, utils.TARGET_USER_ID,
-                    utils.TARGET_MACHINE_NAME, utils.TARGET_MACHINE_IP,
-                    utils.TARGET_PLASO, u'random_type1', u'random_type2']
-    target_values = [u'value_{0:s}'.format(source) for source in target_types]
-
-    for i in range(5):  # 5 is number of real types.
-      expected_type = target_types[i]
-      expected_value = target_values[i]
-      event = dict(zip(target_types[i:], target_values[i:]))
-      source = graph_lib.Graph.GetRemoteTarget(event)
-      self.assertEqual(source, (expected_type, expected_value))
-
-    event = dict(zip(target_types[-2:], target_values[-2:]))
-    expecetd_source = (None, None)
-    source = graph_lib.Graph.GetRemoteTarget(event)
-    self.assertEqual(source, expecetd_source)
-
   def test_AddData(self):
     """Test AddData."""
     graph = graph_lib.Graph()
 
-    graph.AddData(utils.SOURCE_MACHINE_NAME, u'machine1',
-                  utils.TARGET_MACHINE_NAME, u'machine2', u'access', 10, 20)
+    source_machine = event_data.MachineName(source=True, value=u'machine1')
+    target_machine = event_data.MachineName(source=True, value=u'machine2')
+    graph.AddData(source_machine, target_machine, u'access', 10, 20)
 
     self.assertEqual(len(graph.nodes), 2)
     self.assertEqual(len(graph.edges), 1)
 
+    self.assertEqual(graph.nodes[0][u'type'], source_machine.GetName())
+    self.assertEqual(graph.nodes[0][u'value'], source_machine.value)
+
+    self.assertEqual(graph.nodes[1][u'type'], target_machine.GetName())
+    self.assertEqual(graph.nodes[1][u'value'], target_machine.value)
+
+
   def test_MinimalSerialize(self):
     """Test MinimalSerialize."""
     graph = graph_lib.Graph()
-    graph.AddData(utils.SOURCE_MACHINE_NAME, u'machine1',
-                  utils.TARGET_MACHINE_NAME, u'machine2', u'access', 10, 20)
+    graph.AddData(event_data.MachineName(source=True, value=u'machine1'),
+                  event_data.MachineName(source=True, value=u'machine2'),
+                  u'access', 10, 20)
 
     serialized = graph.MinimalSerialize()
     expected_serialized = {
@@ -212,16 +182,16 @@ class CreateGraphTest(unittest.TestCase):
 
   def test_CreateGraph(self):
     """Test CreateGraph."""
-    event = {
-        utils.EVENT_ID: 1,
-        utils.SOURCE_MACHINE_IP: u'192.168.1.11',
-        utils.SOURCE_MACHINE_NAME: u'192.168.1.11',
-        utils.TARGET_USER_NAME: u'dean@acserver',
-        utils.TARGET_MACHINE_NAME: u'acserver',
-        utils.TARGET_PLASO:
-        u'acserver.dd/images/work/vlejd/home/google/local/usr/',
-        utils.TIMESTAMP: 1441559606244560}
-    events = [event]
-    graph = graph_lib.CreateGraph(events)
+    informations_list = [
+        event_data.Ip(source=True, value=u'192.168.1.11'),
+        event_data.MachineName(source=True, value=u'192.168.1.11'),
+        event_data.UserName(target=True, value=u'dean@acserver'),
+        event_data.MachineName(target=True, value=u'acserver'),
+        event_data.Plaso(target=True, value=u'acserver.dd/images/user/usr/'),
+    ]
+    informations = event_data.EventData(
+        data=informations_list, event_id=1, timestamp=1441559606244560)
+    informations_list = [informations]
+    graph = graph_lib.CreateGraph(informations_list)
     self.assertEqual(len(graph.nodes), 4)
     self.assertEqual(len(graph.edges), 3)

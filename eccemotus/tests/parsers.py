@@ -3,8 +3,8 @@
 
 import unittest
 
+from eccemotus.lib import event_data
 from eccemotus.lib.parsers import manager
-from eccemotus.lib.parsers import utils
 
 
 class ParserManagerTest(unittest.TestCase):
@@ -15,72 +15,75 @@ class ParserManagerTest(unittest.TestCase):
     """Generic checks for testing a parser.
 
     Args:
-      expected_result (dict): expected result of parsing.
+      expected_result (list[event_data.EventDatum]): expected result of parsing.
       event (dict): dict serialized plaso event.
     """
     parsed_event = manager.ParserManager.Parse(event)
-    for key, value in expected_result.items():
-      self.assertIn(key, parsed_event)
-      self.assertEqual(parsed_event[key], value)
+
+    for expected_datum in expected_result:
+      parsed_datum = parsed_event.Get(expected_datum)
+      self.assertIsNotNone(
+          parsed_datum, u'Unexpected None for {0:s}'.format(expected_datum))
+      self.assertEqual(parsed_datum.value, expected_datum.value)
 
   def test_LinuxUtmp(self):
     """Test parser for linux:utmp:event data_type."""
-    expected = {
-        utils.SOURCE_MACHINE_IP: u'192.168.1.11',
-        utils.SOURCE_MACHINE_NAME: u'192.168.1.11',
-        utils.TARGET_USER_NAME: u'dean@acserver',
-        utils.TARGET_MACHINE_NAME: u'acserver',
-        utils.TARGET_PLASO:
-        u'acserver.dd/images/user/usr/',
-        utils.TIMESTAMP: 1441559606244560,
-    }
+    expected = [
+        event_data.Ip(source=True, value=u'192.168.1.11'),
+        event_data.MachineName(source=True, value=u'192.168.1.11'),
+        event_data.UserName(target=True, value=u'dean@acserver'),
+        event_data.MachineName(target=True, value=u'acserver'),
+        event_data.Plaso(target=True, value=u'acserver.dd/images/user/usr/'),
+    ]
     self._testParser(expected, self._linux_utmp_event)
 
   def test_WinEvtx(self):
     """Test parser for windows:evtx:record data_type."""
-    expected = {
-        utils.SOURCE_MACHINE_NAME: u'REGISTRAR.internal.greendale.edu',
-        utils.SOURCE_USER_ID: u'S-1-0-0@REGISTRAR.internal.greendale.edu',
-        utils.SOURCE_PLASO: u'registrar.dd/greendale_images/media/',
-        utils.TARGET_MACHINE_NAME: u'STUDENT-PC1',
-        utils.TARGET_MACHINE_IP: u'192.168.1.11',
-        utils.TARGET_USER_ID: u'S-1-5-7@STUDENT-PC1',
-        utils.TARGET_USER_NAME: u'ANONYMOUS LOGON@STUDENT-PC1',
-        utils.TIMESTAMP: 1440409600617570,
-    }
+    expected = [
+        event_data.MachineName(
+            source=True, value=u'REGISTRAR.internal.greendale.edu'),
+        event_data.UserId(
+            source=True, value=u'S-1-0-0@REGISTRAR.internal.greendale.edu'),
+        event_data.Plaso(
+            source=True, value=u'registrar.dd/greendale_images/media/'),
+        event_data.MachineName(target=True, value=u'STUDENT-PC1'),
+        event_data.Ip(target=True, value=u'192.168.1.11'),
+        event_data.UserId(target=True, value=u'S-1-5-7@STUDENT-PC1'),
+        event_data.UserName(target=True, value=u'ANONYMOUS LOGON@STUDENT-PC1')
+    ]
     self._testParser(expected, self._win_evtx_event)
 
   def test_Bsm(self):
     """Test parser for bsm:event data_type."""
-    expected = {
-        utils.SOURCE_MACHINE_IP: u'192.168.1.11',
-        utils.TARGET_PLASO: u'dean_mac.dd/greendale_images/media/',
-        utils.TARGET_USER_ID: u'502@dean_mac.dd/greendale_images/media/',
-        utils.TARGET_USER_NAME: u'dean@dean_mac.dd/greendale_images/media/',
-    }
+    expected = [
+        event_data.Ip(source=True, value=u'192.168.1.11'),
+        event_data.Plaso(
+            target=True, value=u'dean_mac.dd/greendale_images/media/'),
+        event_data.UserId(
+            target=True, value=u'502@dean_mac.dd/greendale_images/media/'),
+        event_data.UserName(
+            target=True, value=u'dean@dean_mac.dd/greendale_images/media/'),
+    ]
     self._testParser(expected, self._bsm_event)
 
-  def test_SysLog(self):
+  def test_SysLogLine(self):
     """Test parser for syslog:line data_type."""
-    expected = {
-        utils.SOURCE_MACHINE_IP: u'10.0.8.6',
-        utils.TARGET_PLASO:
-        u'acserver.dd/images/user/usr/',
-        utils.TARGET_USER_NAME:
-        u'dean@acserver.dd/images/user/usr/',
-        utils.TIMESTAMP: 1440854525000000,
-    }
+    expected = [
+        event_data.Ip(source=True, value=u'10.0.8.6'),
+        event_data.Plaso(target=True, value=u'acserver.dd/images/user/usr/'),
+        event_data.UserName(
+            target=True, value=u'dean@acserver.dd/images/user/usr/')
+    ]
     self._testParser(expected, self._sys_log_event)
 
   def test_SysLogSsh(self):
     """Test parser for syslog:ssh:login data_type."""
-    expected = {
-        utils.SOURCE_MACHINE_IP: u'10.0.8.6',
-        utils.TARGET_MACHINE_NAME: u'acserver',
-        utils.TARGET_PLASO:
-        u'acserver.dd/images/user/usr/',
-        utils.TARGET_USER_NAME: u'dean@acserver',
-    }
+    expected = [
+        event_data.Ip(source=True, value=u'10.0.8.6'),
+        event_data.MachineName(target=True, value=u'acserver'),
+        event_data.Plaso(target=True, value=u'acserver.dd/images/user/usr/'),
+        event_data.UserName(target=True, value=u'dean@acserver'),
+    ]
     self._testParser(expected, self._sys_log_ssh)
 
   # Events I am testing on. Putting them in specific tests would be too ugly.
@@ -192,7 +195,7 @@ class ParserManagerTest(unittest.TestCase):
       u'filename': u'/private/var/audit/20150825205628.crash_recovery',
       u'inode': 0,
       u'message':
-      u'Type: OpenSSH login (32800) Information: [BSM_TOKEN_SUBJECT32_EX: aid(502), euid(502), egid(20), uid(502), gid(20), pid(5023), session_id(5023), terminal_port(49539), terminal_ip(192.168.1.11)]. [BSM_TOKEN_TEXT: successful login dean]. [BSM_TOKEN_RETURN32: Success (0), System call status: 0]',
+      u'Type: OpenSSH login (32800) event_data: [BSM_TOKEN_SUBJECT32_EX: aid(502), euid(502), egid(20), uid(502), gid(20), pid(5023), session_id(5023), terminal_port(49539), terminal_ip(192.168.1.11)]. [BSM_TOKEN_TEXT: successful login dean]. [BSM_TOKEN_RETURN32: Success (0), System call status: 0]',
       u'offset': 132254,
       u'parser': u'bsm_log',
       u'pathspec': {u'__type__': u'PathSpec',

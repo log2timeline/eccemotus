@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """Contains event parser interface class.
 
-All parsers should implement Parse method, that extracts valuable information
-from plaso event in context of lateral movement.
+All parsers should implement Parse method, that extracts valuable data from
+plaso event in context of lateral movement.
 Every parser should have DATA_TYPE property which specifies events of which
 data_types will be parsed by this parser.
 """
@@ -42,6 +42,6 @@ class ParserInterface(object):
       event (dict): dict serialized plaso event.
 
     Returns:
-      dict[str, str]: information parsed from event.
+        event_data.EventData: event data extracted from event.
     """
     pass
