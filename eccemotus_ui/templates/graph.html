@@ -18,6 +18,6 @@
 <script>
   var map = new LateralMap.Map();
   $.get("{{ url_for('GetGraph', graph_id=graph.id) }}", function(data, status) {
-    map.render(data.graph, "#graph", true /* we want buttons*/)
+    map.render(data.graph, "#graph", true /* we want buttons*/);
   });
 </script>

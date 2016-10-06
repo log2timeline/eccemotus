@@ -2,7 +2,9 @@ var LateralMap = (function() {
 
     var Map = function() {};
     Map.prototype.setData = function(data) {
-        /* Makes revertible data manipulation possible. */
+        /**
+         * Makes revertible data manipulation possible.
+         */
         // Permanent copy of data.
         this.backupData = JSON.parse(JSON.stringify(data));
         // Working data.
@@ -10,12 +12,16 @@ var LateralMap = (function() {
     }
 
     Map.prototype.reset = function() {
-        /* Reset working data to initial data. */
+        /**
+         * Reset working data to initial data.
+         */
         this.graph = JSON.parse(JSON.stringify(this.backupData));
     }
 
     Map.prototype.setForces = function() {
-        /* Set up simulation forces that control positions of elements. */
+        /**
+         * Set up simulation forces that control positions of elements.
+         */
         var THAT = this;
         this.simulation = d3.forceSimulation(this.graph.nodes).on('tick', function() {
                 THAT.tick();
@@ -42,7 +48,9 @@ var LateralMap = (function() {
     }
 
     Map.prototype.setElements = function() {
-        /* Create d3 element and link them to data. */
+        /**
+         * Create d3 element and link them to data.
+         */
         var THAT = this;
         this.holder.selectAll('*').remove();
         this.glinks = this.holder.append('g')
@@ -62,7 +70,7 @@ var LateralMap = (function() {
                 return d.type == 'access' ? 'url(#mid-arrow)' : '';
             })
             .attr('stroke-width', THAT.vars.linkWidth)
-            .on('click', function(d) {
+            .on('click.defualt', function(d) {
                 console.log(d);
                 var  i=0;
                 var minTime = 2439118792937500;
@@ -149,7 +157,7 @@ var LateralMap = (function() {
             })
             .style('opacity', 0.5)
             .style('fill', nodeColor)
-            .on('click', function(d) {
+            .on('click.defualt', function(d) {
                 console.log(d);
                 d3.select('#to_merge').property('value', d.cluster);
                 if(THAT.vars.highlighted) {
@@ -229,7 +237,8 @@ var LateralMap = (function() {
     }
 
     Map.prototype.filterEvents = function(fromTime, toTime) {
-        /* Remove edges that did not happen between  fromTime and toTime.
+        /**
+         * Remove edges that did not happen between  fromTime and toTime.
          * Note that other methods have to be called for this to have actual
          * effect.
          */
@@ -251,7 +260,9 @@ var LateralMap = (function() {
     }
 
     Map.prototype.setFilter = function(fromTime, toTime) {
-        /* Sets filter and triggers and ensures proper drawing of the graph. */
+        /**
+         * Sets filter and triggers and ensures proper drawing of the graph.
+         */
 
         this.filterEvents(fromTime, toTime);
         // this must be done because some links maybe filtered out.
@@ -283,7 +294,9 @@ var LateralMap = (function() {
     }
 
     Map.prototype.merge = function(cluster_id){
-        /* Merge nodes in given cluster. */
+        /**
+         * Merge nodes in given cluster.
+         */
         cluster_id = parseInt(cluster_id);
         // mark cluster a merged
         this.merged.add(cluster_id);
@@ -291,7 +304,9 @@ var LateralMap = (function() {
     }
 
     Map.prototype.expand = function(cluster_id){
-        /* Merge nodes in given cluster. */
+        /**
+         * Merge nodes in given cluster.
+         */
         cluster_id = parseInt(cluster_id);
         // mark cluster a merged
         if(this.merged.has(cluster_id)){
@@ -330,7 +345,7 @@ var LateralMap = (function() {
             .attr('type', 'button')
             .attr('id', 'filter_button')
             .text('Filter')
-            .on('click', function() {
+            .on('click.defualt', function() {
                 var fromTime = fromTimeInput.property('value');
                 var toTime = toTimeInput.property('value');
                 THAT.setFilter(fromTime, toTime);
@@ -340,7 +355,7 @@ var LateralMap = (function() {
             .attr('type', 'button')
             .attr('id', 'reset_filter_button')
             .text('Reset')
-            .on('click', function() {
+            .on('click.defualt', function() {
                 var fromTime = fromTimeInput.property('value');
                 var toTime = toTimeInput.property('value');
                 THAT.setFilter(minTimestamp, maxTimestamp);
@@ -355,7 +370,7 @@ var LateralMap = (function() {
         this.timelineHolder.append('button')
             .attr('type', 'button')
             .text('Merge')
-            .on('click', function(){
+            .on('click.defualt', function(){
                 var cluster_id = MergeInput.property('value');
                 THAT.merge(cluster_id);
             })
@@ -363,7 +378,7 @@ var LateralMap = (function() {
         this.timelineHolder.append('button')
             .attr('type', 'button')
             .text('Expand')
-            .on('click', function(){
+            .on('click.defualt', function(){
                 var cluster_id = MergeInput.property('value');
                 THAT.expand(cluster_id);
             })
@@ -371,7 +386,7 @@ var LateralMap = (function() {
         this.timelineHolder.append('button')
             .attr('type', 'button')
             .text('Merge All')
-            .on('click', function(){
+            .on('click.defualt', function(){
                 THAT.graph.nodes.forEach(function(d){
                     THAT.merge(d.cluster);
                 })
@@ -381,7 +396,7 @@ var LateralMap = (function() {
             .attr('type', 'button')
             .attr('id', 'merge_button')
             .text('Expand All')
-            .on('click', function(){
+            .on('click.defualt', function(){
                 THAT.graph.nodes.forEach(function(d){
                     THAT.expand(d.cluster);
                 })
@@ -391,17 +406,19 @@ var LateralMap = (function() {
         this.timelineHolder.append('button')
             .attr('type', 'button')
             .text('Stop')
-            .on('click', function(){THAT.simulation.stop();})
+            .on('click.defualt', function(){THAT.simulation.stop();})
 
         this.timelineHolder.append('button')
             .attr('type', 'button')
             .text('Restart')
-            .on('click', function(){THAT.simulation.restart();})
+            .on('click.defualt', function(){THAT.simulation.restart();})
 
     }
 
     Map.prototype.render = function(data, element, renderButtons=false) {
-        /* Renders actual graph based on data in element. */
+        /**
+         * Renders actual graph based on data in element.
+         */
         this.vars = { // variables that needs to be accessed in other methods
             linkWidth: 4,
             fontSize: 15,
@@ -481,21 +498,27 @@ var LateralMap = (function() {
         }
     };
     Map.prototype.selectById = function(selection, idSet) {
-        /* Helper function to select multiple elements by their data ids.*/
+        /**
+         * Helper function to select multiple elements by their data ids.
+         */
         return selection.filter(function(d) {
             return idSet.has(d.id);
         });
     }
 
     Map.prototype.resetOpacity = function() {
-        /* Set opacity of elements to their initial value. */
+        /**
+         * Set opacity of elements to their initial value.
+         */
         this.nodes.style('stroke-width', 0)
         this.glinks.style('opacity', 1);
         this.gnodes.style('opacity', 1);
     }
 
     Map.prototype.zoomed = function() {
-        /* Handles zoom event*/
+        /**
+         * Handles zoom event.
+         */
         var THAT = this;
         if(typeof THAT.transform == 'undefined') {
             return;
@@ -518,7 +541,8 @@ var LateralMap = (function() {
     }
 
     Map.prototype.hasIsDfs = function(d) {
-        /* Finds all nodes that are reachable from d only through 'has' and
+        /**
+         * Finds all nodes that are reachable from d only through 'has' and
          * 'is' links/edges. *
          * d can be array of nodes or one node.
          */
@@ -576,9 +600,11 @@ var LateralMap = (function() {
 
 
     Map.prototype.tick = function() {
-        /* Handles one tick of simulation. */
+        /**
+         * Handles one tick of simulation.
+         */
         var THAT = this;
-        // using quadtree for fast collision detection.
+        // Using quadtree for fast collision detection.
         var q = d3.quadtree()
             .x(function(d) {
                 return d.x;
@@ -589,11 +615,11 @@ var LateralMap = (function() {
             .addAll(this.graph.nodes);
 
         for(var i = 0; i < this.graph.nodes.length; i++) {
-            // visit every node and check for collisions
+            // Visit every node and check for collisions.
             q.visit(collide(this.graph.nodes[i], this.oldScale));
         }
 
-        // moving links
+        // Moving links.
         this.links
             .attr('x1', function(d) {
                 return THAT.getRealTarget(d.source).x;
@@ -607,7 +633,7 @@ var LateralMap = (function() {
             .attr('y2', function(d) {
                 return THAT.getRealTarget(d.target).y;
             });
-        // moving nodes
+        // Moving nodes.
         this.nodes
             .attr('x', function(d) {
                 return d.x;
@@ -615,7 +641,7 @@ var LateralMap = (function() {
             .attr('y', function(d) {
                 return d.y;
             });
-        // moving node labels
+        // Moving node labels.
         this.nodeLabels
             .attr('x', function(d) {
                 var rect = d3.select(this.parentNode).select('rect');
@@ -627,7 +653,7 @@ var LateralMap = (function() {
                 var rectHeight = rect.attr('height');
                 return d.y + rectHeight * 0.85;
             });
-        // moving link labels
+        // Moving link labels.
         this.linkLabels
             .attr('x', function(d) {
                 var realSource = THAT.getRealTarget(d.source);
@@ -645,7 +671,9 @@ var LateralMap = (function() {
 
     function collide(node, scale) {
         scale = 1;
-        /* Returns visitor that detects and resolves collisions with node.*/
+        /**
+         * Returns visitor that detects and resolves collisions with node.
+         */
         var nxPadding = node.width * 0.02 / scale,
             nyPadding = node.height * 0.1 / scale,
             nx1 = node.x - nxPadding,
@@ -657,18 +685,19 @@ var LateralMap = (function() {
 
 
         return function(tree, x1, y1, x2, y2) {
-            /* Gets subguadtree and current bounding box.
+            /**
+             * Gets subguadtree and current bounding box.
              * Determines if this bounding box needs to be considered.
              * In case the tree contains only one node, resolves collision with
              * this node.
              */
-            // expand the bounding box
-            // TODO redo
+            // Expand the bounding box
+            // TODO this is not entirely correct, but it produces good results.
             x1 -= node.width / scale + nxPadding;
             y1 -= node.height / scale + nyPadding;
             x2 += node.width / scale + nxPadding;
             y2 += node.height / scale + nyPadding;
-            // initialize  variables for geometric computations
+            // Initialize  variables for geometric computations.
             var left = Math.min(x1, nx1, x2, nx2),
                 right = Math.max(x1, nx1, x2, nx2),
                 up = Math.min(y1, ny1, y2, ny2),
@@ -678,12 +707,12 @@ var LateralMap = (function() {
                 xOverlap = xSize - (right - left),
                 yOverlap = ySize - (down - up);
 
-            // check is node overlaps with the bounding box
+            // Check is node overlaps with the bounding box.
             if(xOverlap > 0 && yOverlap > 0) {
                 if('data' in tree && (tree.data !== node)) {
-                    // we are in subtree that represents one node
+                    // We are in subtree that represents one node.
                     var point = tree.data;
-                    // we need to exactly determine now much two nodes overlap
+                    // We need to exactly determine now much two nodes overlap.
                     var pxPadding = point.width*0.02 / scale,
                         pyPadding = point.height*0.02 / scale,
                         px1 = point.x - pxPadding,
@@ -707,7 +736,7 @@ var LateralMap = (function() {
                         lx = (absX - xSpacing) / l;
                         ly = (absY - ySpacing) / l;
 
-                        // move only in one dimension
+                        // Move only in one dimension.
                         if(Math.abs(lx) > Math.abs(ly)) {
                             lx = 0;
                         } else {
@@ -795,6 +824,26 @@ var LateralMap = (function() {
             return d3.color('orange');
         }
     }
+
+    Map.prototype.customLinkClick = function(callback) {
+        /**
+         * Set custom on click event for links (on('click.custom')).
+         * This will not override the default behavior but it will override any
+         * other custom behavior that was set before.
+         */
+        this.links.on('click.custom', callback);
+    }
+
+    Map.prototype.customNodeClick = function(callback) {
+        /**
+         * Set custom on click event for links (on('click.custom')).
+         * This will not override the default behavior but it will override any
+         * other custom behavior that was set before.
+         */
+        this.nodes.on('click.custom', callback);
+    }
+
+
 
     var exports = {}
     exports.Map = Map;
