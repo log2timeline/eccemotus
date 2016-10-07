@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Command line interface for eccemotus. """
+"""Command line interface for eccemotus."""
 
 from __future__ import print_function
 import argparse
@@ -57,9 +57,8 @@ def Render(args):
     args (argparse.Namespace): command line arguments.
   """
   directory = args.output
-  base = os.path.dirname(os.path.abspath(__file__))
-  base = os.path.join(base, u'eccemotus_ui')
-
+  from eccemotus_ui import lateral
+  base = os.path.dirname(lateral.__file__)
   if not os.path.exists(args.output):
     os.makedirs(args.output)
 

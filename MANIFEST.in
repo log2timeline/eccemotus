@@ -1,0 +1,2 @@
+recursive-include eccemotus_ui/static *
+recursive-include eccemotus_ui/templates *
