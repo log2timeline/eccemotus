@@ -1,6 +1,9 @@
 var LateralMap = (function() {
 
-    var Map = function() {};
+    var Map = function(width=1200, height=1100) {
+        this.height = height;
+        this.width = width;
+    };
     Map.prototype.setData = function(data) {
         /**
          * Makes revertible data manipulation possible.
@@ -70,21 +73,6 @@ var LateralMap = (function() {
                 return d.type == 'access' ? 'url(#mid-arrow)' : '';
             })
             .attr('stroke-width', THAT.vars.linkWidth)
-            .on('click.defualt', function(d) {
-                console.log(d);
-                var  i=0;
-                var minTime = 2439118792937500;
-                var maxTime = 0;
-                for(var e in d.events) {
-                    minTime = Math.min(minTime, d.events[e].timestamp);
-                    maxTime = Math.max(maxTime, d.events[e].timestamp);
-                    i+=1;
-                    if (i<10){
-                        console.log(d.events[e]);
-                    }
-                }
-                console.log(minTime, maxTime);
-            })
             .on('mouseover', function(d) {
                 glink = d3.select(this.parentNode);
                 var line = glink.select('line');
@@ -158,7 +146,6 @@ var LateralMap = (function() {
             .style('opacity', 0.5)
             .style('fill', nodeColor)
             .on('click.defualt', function(d) {
-                console.log(d);
                 d3.select('#to_merge').property('value', d.cluster);
                 if(THAT.vars.highlighted) {
                     THAT.resetOpacity();
@@ -432,8 +419,6 @@ var LateralMap = (function() {
             highlighted: false
         };
         var THAT = this;
-        this.height = 1100;
-        this.width = 1200;
         this.simulation;
         this.element = element;
 
@@ -831,7 +816,11 @@ var LateralMap = (function() {
          * This will not override the default behavior but it will override any
          * other custom behavior that was set before.
          */
-        this.links.on('click.custom', callback);
+        this.links.on('click.custom', function(d){
+            if (d3.event.ctrlKey) {
+                callback(d);
+            }
+        });
     }
 
     Map.prototype.customNodeClick = function(callback) {
@@ -840,7 +829,11 @@ var LateralMap = (function() {
          * This will not override the default behavior but it will override any
          * other custom behavior that was set before.
          */
-        this.nodes.on('click.custom', callback);
+        this.nodes.on('click.custom', function(d){
+            if (d3.event.ctrlKey) {
+                callback(d);
+            }
+        });
     }
 
 
