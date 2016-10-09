@@ -51,7 +51,8 @@ def FileDataGenerator(filename, verbose=False):
       yield json.loads(line)
 
 
-def ElasticDataGenerator(client, indexes, verbose=False):
+def ElasticDataGenerator(
+    client, indexes, query=None, verbose=False):
   """Reads event data from elasticsearch.
 
   Uses scan function, so the data are actually streamed and do not need to be
@@ -60,6 +61,7 @@ def ElasticDataGenerator(client, indexes, verbose=False):
   Args:
     client (Elasticsearch): elasticsearch client.
     indexes (list[str]): elasticsearch indexes.
+    query (None|dict): if specified, query is used as elasticsearch query.
     verbose (bool): control for verbosity.
 
   Yields:
@@ -68,7 +70,6 @@ def ElasticDataGenerator(client, indexes, verbose=False):
   Raises:
     ImportError: when you do not have elasticsearch installed.
   """
-
   if Elasticsearch is None:
     raise ImportError((u'Please install elasticsearch to use this'
                        u'functionality.'))
@@ -76,12 +77,14 @@ def ElasticDataGenerator(client, indexes, verbose=False):
   # Term filter for data_types, that we can parse.
   should = [{u'term': {u'data_type': data_type}}
             for data_type in manager.ParserManager.GetParsedTypes()]
+  if not query:
+    query = {u'match_all': {}}
 
   # Elasticsearch query.
-  query = {
+  query_dict = {
       u'query': {
           u'filtered': {
-              u'query': {u'match_all': {}},
+              u'query': query,
               u'filter': {
                   u'bool': {
                       u'should': should,
@@ -92,7 +95,7 @@ def ElasticDataGenerator(client, indexes, verbose=False):
   }
   VERBOSE_INTERVAL = 10000
   logger = logging.getLogger(__name__)
-  results = helpers.scan(client, query=query, index=indexes)
+  results = helpers.scan(client, query=query_dict, index=indexes)
   for i, response in enumerate(results):
     if not i % VERBOSE_INTERVAL and verbose:
       logger.info(u'Elastic records {0:d}'.format(i))

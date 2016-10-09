@@ -46,7 +46,7 @@ def FileToGraph(args):
   Args:
     args (argparse.Namespace): command line arguments.
   """
-  generator = eccemotus.FileDataGenerator(args.input, True)
+  generator = eccemotus.FileDataGenerator(args.input, args.verbose)
   CreateGraph(generator, args)
 
 

@@ -126,7 +126,7 @@ class EventData(object):
       datum (EventDatum): event datum.
     """
     black_list = self.BLACK_LIST.get(datum.__class__, set())
-    if datum.value not in black_list:
+    if datum.value and datum.value not in black_list:
       self._index[datum.GetFullName()] = datum
 
   def Items(self):
