@@ -2,7 +2,7 @@
 """Provides basic methods for storing lateral movement logs in property Graph.
 
 For default use-case, call CreateGraph(data).MinimalSerialize().
-This returns json representation of property graph. This can be directly send to
+This returns json representation of property graph. It can be directly send to
 javascript visualization.
 """
 
@@ -24,7 +24,7 @@ class Graph(object):
   In our case, we have a very specific set of properties.
   nodes:
     id: Automatic generated unique id
-    type: Type/name of the node. These correspond to EventDatum.GetName().
+    type: Type/name of the node. These correspond to EventDatum.NAME.
     value: Value that the node has.
   Pair (tuple) (type, value) is also unique identifier of a node.
 
@@ -50,6 +50,14 @@ class Graph(object):
   This dictionary (not class) based implementation has its meaning. It is
   easily extensible and prone to data integrity errors. It also has direct
   mapping to data, that can be used in javascript (d3) visualization.
+
+  Attributes:
+    edges (list): list of graph edges.
+    edges_ids (defaultdict[tuple, int]): maps tuple serialized edges to their
+        ids.
+    nodes (list): list of graph nodes.
+    nodes_ids (defaultdict[tuple, int]): maps tuple serialized nodes to their
+        ids.
   """
 
   # Edge types.
@@ -101,17 +109,17 @@ class Graph(object):
   # priority.
   DATA_PRIORITY = (
       event_data.UserName, event_data.UserId, event_data.MachineName,
-      event_data.Ip, event_data.Plaso)
+      event_data.Ip, event_data.StorageFileName)
 
   def __init__(self):
-    """Initialize empty graph."""
+    """Initializes empty graph."""
     self.edges = []
     self.edges_ids = defaultdict(int)  # Provides fast index for edges.
     self.nodes = []
     self.nodes_ids = defaultdict(int)  # Provides fast index for nodes.
 
   def GetAddNode(self, node_type, node_value):
-    """Return node's id with given type and value.
+    """Gets node's id with given type and value.
 
     If the node does not exist, it is created.
 
@@ -122,7 +130,6 @@ class Graph(object):
     Returns:
       int: identifier of node. This is a position of node in self.nodes.
     """
-
     node = Node(node_type, node_value)
     if node.ToTuple() not in self.nodes_ids:
       node.id = len(self.nodes)
@@ -132,16 +139,15 @@ class Graph(object):
     return self.nodes_ids[node.ToTuple()]
 
   def AddEdge(self, source_id, target_id, edge_type, timestamp, event_id):
-    """Add new edge to graph or just add new event to existing edge.
+    """Adds new edge to graph or just adds new event to existing edge.
 
     Args:
-      edge_type (str): type of the edge (currently "has", "is" or access").
+      edge_type (str): type of the edge (currently "has", "is" or "access").
       event_id (int|str): identifier for event responsible for this edge.
       source_id (int): id of source node.
       target_id (int): id of target node.
       timestamp (int): timestamp when event happened.
     """
-
     edge = (source_id, target_id, edge_type)
     if edge in self.edges_ids:
       edge_id = self.edges_ids[edge]
@@ -150,7 +156,6 @@ class Graph(object):
           u'timestamp': timestamp
       }
       self.edges[edge_id][u'events'].append(event)
-
     else:
       edge_id = len(self.edges)
       self.edges_ids[edge] = edge_id
@@ -167,7 +172,7 @@ class Graph(object):
 
   @classmethod
   def GetRemote(cls, data, source=False, target=False):
-    """Return most specific remote source/target.
+    """Gets most specific remote source/target.
 
     Knowing that the remote connection was from user Dean is better than knowing
     only the ip address.
@@ -196,7 +201,7 @@ class Graph(object):
 
   def AddData(
       self, source_datum, target_datum, edge_type, event_time, event_id):
-    """Add edge with corresponding nodes to graph.
+    """Adds edge with corresponding nodes to graph.
 
     This ensures that required nodes are in the graph and creates an edge
     between them.
@@ -208,16 +213,15 @@ class Graph(object):
       source_datum (event_data.EventDatum): event datum about source node.
       target_datum (event_data.EventDatum): event datum about target node.
     """
-
-    source_id = self.GetAddNode(source_datum.GetName(), source_datum.value)
-    target_id = self.GetAddNode(target_datum.GetName(), target_datum.value)
+    source_id = self.GetAddNode(source_datum.NAME, source_datum.value)
+    target_id = self.GetAddNode(target_datum.NAME, target_datum.value)
     self.AddEdge(source_id, target_id, edge_type, event_time, event_id)
 
   def AddEventData(self, parsed_event):
     """Processes one parsed event and encodes it to edges and nodes.
 
     Encoding is based on simple rules stored at RULES. If event contains
-    event_data with key/name event.source and event.target, a new edge will be
+    event_data with key/name rule.source and rule.target, a new edge will be
     created with type rule.type.
 
     Args:
@@ -233,7 +237,7 @@ class Graph(object):
             source_datum, target_datum, rule.type, parsed_event.timestamp,
             parsed_event.event_id)
 
-    # Rules for access edge.
+    # Rules for access edges.
     remote_source = self.__class__.GetRemote(parsed_event, source=True)
     remote_target = self.__class__.GetRemote(parsed_event, target=True)
     if remote_source and remote_target:
@@ -242,15 +246,21 @@ class Graph(object):
           parsed_event.timestamp, parsed_event.event_id)
 
   def MinimalSerialize(self):
-    """Serialized only required event_data for visualization."""
+    """Serializes only required data for visualization."""
     return {u'nodes': self.nodes, u'links': self.edges}
 
 
 class Node(object):
-  """Graph node."""
+  """Graph node.
+
+  Attributes:
+    id (int): node id.
+    type (str): node type.
+    value (str): node value.
+  """
 
   def __init__(self, node_type, node_value, node_id=None):
-    """Initialize Node.
+    """Initializes Node.
 
     Args:
       type (str): node's type.
@@ -262,7 +272,7 @@ class Node(object):
     self.id = node_id
 
   def ToDict(self):
-    """Create dictionary representation of node.
+    """Creates dictionary representation of node.
 
     Returns:
       dict: representation of node.
@@ -276,8 +286,9 @@ class Node(object):
   def ToTuple(self):
     """Creates tuple representation of node.
 
-    Used as a unique identifier for the node. Nodes with the same TuTuple
-    representation should have have same ids.
+    Used as a unique identifier for the node. Nodes with the same ToTuple
+    representation should have have same ids, in other words, there should not
+    be two nodes with the same ToTuple values.
 
     Returns:
       tuple [str,str]: tuple representation of node.

@@ -7,10 +7,10 @@ from eccemotus.lib.parsers import utils
 
 
 class UtilsTest(unittest.TestCase):
-  """Test utils """
+  """Tests for utils."""
 
   def test_FirstTrue(self):
-    """Test FirstTrue."""
+    """Tests extracting object from list that evaluates to True."""
 
     first_true = utils.FirstTrue([None, u'', {}, u'true'])
     expected_first_true = u'true'
@@ -26,7 +26,7 @@ class UtilsTest(unittest.TestCase):
 
 
   def test_GetImageName(self):
-    """Test GetPlasoFilename."""
+    """Tests extracting plaso source file name from pathspec dictionary."""
 
     event = {
         u'pathspec': {
@@ -48,7 +48,6 @@ class UtilsTest(unittest.TestCase):
                 u'type_indicator': u'TSK_PARTITION'},
             u'type_indicator': u'TSK'},
     }
-
     plaso_file_name = utils.GetImageName(event)
     expected_plso_file_name = u'image.dd/images/user/home/'
     self.assertEqual(plaso_file_name, expected_plso_file_name)

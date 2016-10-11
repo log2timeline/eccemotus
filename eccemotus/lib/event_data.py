@@ -1,32 +1,32 @@
 # -*- coding: utf-8 -*-
-"""Contains classes to handle data parsed from events."""
-
-import abc
-
-# Since abc does not seem to have an @abc.abstractclassmethod we're using
-# @abc.abstractmethod instead and shutting up pylint about:
-# E0213: Method should have "self" as first argument.
-# pylint: disable=no-self-argument
+"""Contains classes for handling data parsed from events."""
 
 class EventDatum(object):
   """Interface for event data of various types/names.
 
   Datum has a value, a flag whether it describes source or a target of given
   event and a name. Name of the datums is based on it's class name and it's
-  string representations is returned by GetName method. Full name of the datum
+  string representations is in NAME class constant. Full name of the datum
   describes the exact information the datum stores. It is the datum's name
   expanded by whether it is a source or a target.
-  """
 
-  def __init__(self, value=None, source=None, target=None):
-    """Initialize EventDatum.
+  Attributes:
+    source (bool): whether the datum describes source.
+    target (bool): whether the datum describes target.
+    value (str): datum's value.
+  """
+  # Datum's name. This should be set by each subclass.
+  NAME = u''
+
+  def __init__(self, value=None, source=False, target=False):
+    """Initializes EventDatum.
 
     Args:
       value (str): value of the datum.
       source (bool): whether the datum describes event source. source and target
-        can not be both True at the same time.
+          can not be both True at the same time.
       target (bool): whether the datum describes event target. source and target
-        can not be both True at the same time.
+          can not be both True at the same time.
 
     Raises:
       ValueError: if source and target are both True.
@@ -40,95 +40,59 @@ class EventDatum(object):
     self.target = bool(target)
 
   def GetFullName(self):
-    """Representation of full datum's name.
-    Return: containing:
-      bool: whether the datum describes source.
-      bool: whether the datum describes target.
-      str: datum's name.
-    """
-    return (self.source, self.target, self.GetName())
+    """Gets representation of full datum's name.
 
-  def __repr__(self):
-    """Readable printable string representation of datum.
+    Return:
+      tuple containing:
+        bool: whether the datum describes source.
+        bool: whether the datum describes target.
+        str: datum's name.
+    """
+    return (self.source, self.target, self.NAME)
+
+  def __str__(self):
+    """Returns readable, printable, string representation of datum.
 
     Mostly used for debugging purposes.
 
     Return:
       str: string representation of datum.
     """
-    return (self.source, self.target, self.GetName(), self.value).__repr__()
-
-  @abc.abstractmethod
-  def GetName(cls):
-    """Datum's name.
-
-    Return:
-      str: datum's name.
-    """
-    pass
+    return (self.source, self.target, self.NAME, self.value).__repr__()
 
 class Ip(EventDatum):
   """Class to hold data about ip address."""
-  @classmethod
-  def GetName(cls):
-    """Name for Ip.
-
-    Return:
-      str: u'ip'.
-    """
-    return u'ip'
+  NAME = u'ip'
 
 class MachineName(EventDatum):
   """Class to hold data about machine name."""
-  @classmethod
-  def GetName(cls):
-    """Name for MachineName.
+  NAME = u'machine_name'
 
-    Returns:
-      str: u'machine_name'.
-    """
-    return u'machine_name'
-
-class Plaso(EventDatum):
+class StorageFileName(EventDatum):
   """Class to hold data about plaso file name."""
-  @classmethod
-  def GetName(cls):
-    """Name for plaso.
-
-    Returns:
-      str: u'plaso'.
-    """
-    return u'plaso'
+  NAME = u'plaso'
 
 class UserId(EventDatum):
   """Class to hold data about user id."""
-  @classmethod
-  def GetName(cls):
-    """Name for UserId.
-
-    Returns:
-      str: u'user_id'.
-    """
-    return u'user_id'
+  NAME = u'user_id'
 
 class UserName(EventDatum):
   """Class to hold data about user name."""
-  @classmethod
-  def GetName(cls):
-    """Name for UserName.
-
-    Returns:
-      str: u'user_name'.
-    """
-    return u'user_name'
+  NAME = u'user_name'
 
 class EventData(object):
   """Collection of EventDatum used to manage data extracted from events.
 
   Data are indexed by their FullName so for each FullName there can be only one
   datum.
-  """
 
+  Attributes:
+    event_data_type: data_type of event responsible for creation of this
+        EventData.
+    event_id (int): id of event responsible for creation of this EventData.
+    timestamp (int): timestamp id of event responsible for creation of this
+        EventData.
+  """
   # Black lists for common invalid or uninteresting datum types and values.
   BLACK_LIST = {
       Ip: set([u'127.0.0.1', u'localhost', u'-', u'::1']),
@@ -138,7 +102,7 @@ class EventData(object):
 
   def __init__(
       self, data=None, event_data_type=None, event_id=None, timestamp=None):
-    """Initialize empty EventData.
+    """Initializes empty EventData.
 
     Args:
       data (iterable[EventDatum]): initial data for this collection.
@@ -148,7 +112,7 @@ class EventData(object):
     """
     if data is None:
       data = []
-    self._index = {}
+    self._index = {}  # Holds each added datum.
     self.event_id = event_id
     self.timestamp = timestamp
     self.event_data_type = event_data_type
@@ -166,7 +130,7 @@ class EventData(object):
       self._index[datum.GetFullName()] = datum
 
   def Items(self):
-    """Access data from EventData.
+    """Returns data from EventData.
 
     Yields:
       EventDatum: event datum.
@@ -175,7 +139,7 @@ class EventData(object):
       yield self._index[datum]
 
   def Get(self, reference_datum, default=None):
-    """Access datum with FullName() same as reference_datum.
+    """Gets datum with FullName() same as reference_datum.
 
     Args:
       reference_datum (EventDatum): reference_datum.GetFullName() determines
@@ -191,8 +155,8 @@ class EventData(object):
     else:
       return default
 
-  def Empty(self):
-    """Check if EventData is empty.
+  def IsEmpty(self):
+    """Checks if EventData is empty.
 
     Returns:
       bool: whether the EventData is empty.

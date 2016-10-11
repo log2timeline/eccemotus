@@ -7,10 +7,10 @@ from eccemotus.lib import event_data
 from eccemotus.lib import graph as graph_lib
 
 class GraphTest(unittest.TestCase):
-  """Test Graph."""
+  """Tests for graph library."""
 
   def test_init(self):
-    """Test Graph initialization."""
+    """Tests graph initialization."""
     graph = graph_lib.Graph()
     self.assertEqual(len(graph.edges), 0)
     self.assertEqual(len(graph.edges_ids), 0)
@@ -18,7 +18,7 @@ class GraphTest(unittest.TestCase):
     self.assertEqual(len(graph.nodes_ids), 0)
 
   def test_GetAddNode(self):
-    """Test GetAddNode method."""
+    """Tests node adding."""
     graph = graph_lib.Graph()
     node1 = graph_lib.Node(u'node_type_1', u'node_value_1', 0)
     graph.GetAddNode(node1.type, node1.value)
@@ -38,14 +38,15 @@ class GraphTest(unittest.TestCase):
     self.assertEqual(len(graph.nodes_ids), 2)
 
   def test_AddEventData(self):
-    """Test AddEventData."""
+    """Tests event adding."""
     graph = graph_lib.Graph()
     informations_list = [
         event_data.Ip(source=True, value=u'192.168.1.11'),
         event_data.MachineName(source=True, value=u'192.168.1.11'),
         event_data.UserName(target=True, value=u'dean@acserver'),
         event_data.MachineName(target=True, value=u'acserver'),
-        event_data.Plaso(target=True, value=u'acserver.dd/images/user/usr/'),
+        event_data.StorageFileName(
+            target=True, value=u'acserver.dd/images/user/usr/'),
     ]
     informations = event_data.EventData(
         data=informations_list, event_id=1, timestamp=1441559606244560)
@@ -55,7 +56,7 @@ class GraphTest(unittest.TestCase):
     self.assertEqual(len(graph.edges), 3)
 
   def test_AddEdge(self):
-    """Test AddEdge."""
+    """Tests edge adding."""
     graph = graph_lib.Graph()
     node1 = graph_lib.Node(u'node_type_1', u'node_value_1')
     node1_id = graph.GetAddNode(node1.type, node1.value)
@@ -73,7 +74,7 @@ class GraphTest(unittest.TestCase):
     self.assertEqual(len(edge[u'events']), 2)
 
   def test_AddData(self):
-    """Test AddData."""
+    """Tests data adding."""
     graph = graph_lib.Graph()
 
     source_machine = event_data.MachineName(source=True, value=u'machine1')
@@ -83,15 +84,15 @@ class GraphTest(unittest.TestCase):
     self.assertEqual(len(graph.nodes), 2)
     self.assertEqual(len(graph.edges), 1)
 
-    self.assertEqual(graph.nodes[0][u'type'], source_machine.GetName())
+    self.assertEqual(graph.nodes[0][u'type'], source_machine.NAME)
     self.assertEqual(graph.nodes[0][u'value'], source_machine.value)
 
-    self.assertEqual(graph.nodes[1][u'type'], target_machine.GetName())
+    self.assertEqual(graph.nodes[1][u'type'], target_machine.NAME)
     self.assertEqual(graph.nodes[1][u'value'], target_machine.value)
 
 
   def test_MinimalSerialize(self):
-    """Test MinimalSerialize."""
+    """Tests serialization."""
     graph = graph_lib.Graph()
     graph.AddData(event_data.MachineName(source=True, value=u'machine1'),
                   event_data.MachineName(source=True, value=u'machine2'),
@@ -128,10 +129,10 @@ class GraphTest(unittest.TestCase):
 
 
 class NodeTest(unittest.TestCase):
-  """Test Node."""
+  """Test node class."""
 
   def test_init(self):
-    """Test Node initialization."""
+    """Tests node initialization."""
     node_type = u'type'
     node_value = u'value'
     node_id = 10
@@ -147,7 +148,7 @@ class NodeTest(unittest.TestCase):
     self.assertIs(node.id, node_id)
 
   def test_ToTuple(self):
-    """Test ToTuple."""
+    """Tests converting to tuple."""
     node1_type = u'type'
     node1_value = u'value'
     node1_id = 10
@@ -162,7 +163,7 @@ class NodeTest(unittest.TestCase):
     self.assertEqual(node1_tuple, node1_with_id_none_tuple)
 
   def test_ToDict(self):
-    """Test ToDict."""
+    """Tests converting to dict."""
     node1_type = u'type'
     node1_value = u'value'
     node1_id = 10
@@ -178,16 +179,17 @@ class NodeTest(unittest.TestCase):
 
 
 class CreateGraphTest(unittest.TestCase):
-  """Test CreateGraph."""
+  """Tests graph creation routine."""
 
   def test_CreateGraph(self):
-    """Test CreateGraph."""
+    """Tests graph creation."""
     informations_list = [
         event_data.Ip(source=True, value=u'192.168.1.11'),
         event_data.MachineName(source=True, value=u'192.168.1.11'),
         event_data.UserName(target=True, value=u'dean@acserver'),
         event_data.MachineName(target=True, value=u'acserver'),
-        event_data.Plaso(target=True, value=u'acserver.dd/images/user/usr/'),
+        event_data.StorageFileName(
+            target=True, value=u'acserver.dd/images/user/usr/'),
     ]
     informations = event_data.EventData(
         data=informations_list, event_id=1, timestamp=1441559606244560)

@@ -34,7 +34,7 @@ class ParserInterface(object):
 
   @abc.abstractmethod
   def Parse(cls, event):
-    """Parse plaso event.
+    """Parses plaso event.
 
     This is meant as an abstractclassmethod.
 

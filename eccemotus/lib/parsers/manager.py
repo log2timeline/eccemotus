@@ -32,7 +32,7 @@ class ParserManager(object):
 
   @classmethod
   def GetParsedTypes(cls):
-    """Return data_types that can be parsed.
+    """Returns data_types that can be parsed.
 
     Used for generating an elasticsearch query in timesketch.
     """
@@ -45,8 +45,7 @@ class ParserManager(object):
     Currently each data_type can have at most one parser.
 
     Args:
-      parser_cls (ParserInterface): class to register as a new parser.
-
+      parser_cls (ParserInterface): class to register as a new parser.\
     """
     cls._parser_clases[parser_cls.DATA_TYPE] = parser_cls
 
@@ -55,12 +54,13 @@ class ParserManager(object):
     """Determines which parser should be used and uses it.
 
     Parser is chosen based on data_type of event.
-    After the parsing, some enhancements are done to data.
-    Users (names and ids) are extended by first reasonable machine
-    identifier. Timestamps and event_id are added.
+    After parsing, some enhancements are done to data.
+    Users (names and ids) are extended by first reasonable machine identifier.
+    Adds timestamps and event_id.
 
     Args:
-        event (dict): dict serialize plaso event.
+        event (dict): dict serialized plaso event.
+
     Returns:
         event_data.EventData: event data extracted from event.
     """
@@ -75,14 +75,16 @@ class ParserManager(object):
     if data_type in cls._parser_clases:
       parsed_data = cls._parser_clases[data_type].Parse(event)
 
-      if not parsed_data or parsed_data.Empty():
+      if not parsed_data or parsed_data.IsEmpty():
         return event_data.EventData()
 
       parsed_data.event_data_type = data_type
-      target_id = utils.FirstValidDatum([
+      target_datum_candidates = [
           parsed_data.Get(event_data.MachineName(target=True)),
           parsed_data.Get(event_data.Ip(target=True)),
-          parsed_data.Get(event_data.Plaso(target=True))], default=u'UNKNOWN')
+          parsed_data.Get(event_data.StorageFileName(target=True))]
+      target_id = utils.FirstValidDatum(
+          target_datum_candidates, default=u'UNKNOWN')
 
       for inf in [event_data.UserName(target=True),
                   event_data.UserId(target=True)]:
@@ -90,10 +92,12 @@ class ParserManager(object):
         if inf:
           inf.value += u'@' + target_id
 
-      source_id = utils.FirstValidDatum([
+      source_datum_candidates = [
           parsed_data.Get(event_data.MachineName(source=True)),
           parsed_data.Get(event_data.Ip(source=True)),
-          parsed_data.Get(event_data.Plaso(source=True))], default=u'UNKNOWN')
+          parsed_data.Get(event_data.StorageFileName(source=True))]
+      source_id = utils.FirstValidDatum(
+          source_datum_candidates, default=u'UNKNOWN')
 
       for inf in [event_data.UserName(source=True),
                   event_data.UserId(source=True)]:

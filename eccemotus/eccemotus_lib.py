@@ -10,13 +10,14 @@ FileDataGenerator:
   file, but has smaller memory requirements.
 
 ElasticDataGenerator:
-  Queries elasticsearch for events that it can parse. Also no memory
-  requirements. Does not need to read all logs, but must wait for elasticsearch.
+  Queries elasticsearch for events that it can parse. It has small memory
+  requirements and does not need to read all logs, however must wait for
+  elasticsearch.
 
 Then you have to parse the data with ParsedDataGenerator(data_generator).
 
-Last thing you want to do is to call GetGraphJSON(ParsedDataGenerator)
-to create the actual graph.
+Last thing you want to do is to call GetGraphJSON(ParsedDataGenerator) to
+create the actual graph.
 """
 
 import json
@@ -53,7 +54,8 @@ def FileDataGenerator(filename, verbose=False):
 def ElasticDataGenerator(client, indexes, verbose=False):
   """Reads event data from elasticsearch.
 
-  Uses scan function, so the data is really processed like a stream.
+  Uses scan function, so the data are actually streamed and do not need to be
+  in RAM.
 
   Args:
     client (Elasticsearch): elasticsearch client.
@@ -62,13 +64,16 @@ def ElasticDataGenerator(client, indexes, verbose=False):
 
   Yields:
     dict: JSON representation of plaso event.
+
+  Raises:
+    ImportError: when you do not have elasticsearch installed.
   """
 
   if Elasticsearch is None:
     raise ImportError((u'Please install elasticsearch to use this'
                        u'functionality.'))
 
-  # Generating term filter for data_types, that we can parse.
+  # Term filter for data_types, that we can parse.
   should = [{u'term': {u'data_type': data_type}}
             for data_type in manager.ParserManager.GetParsedTypes()]
 
@@ -106,6 +111,9 @@ def GetClient(host, port):
 
   Returns:
     Elasticsearch: elasticsearch client.
+
+  Raises:
+    ImportError: when you do not have elasticsearch installed.
   """
   if Elasticsearch is None:
     raise ImportError((u'Please install elasticsearch to use this '
@@ -116,7 +124,7 @@ def GetClient(host, port):
 
 
 def ParsedDataGenerator(raw_generator):
-  """Transform raw event generator to parsed events generator.
+  """Transforms raw event generator to parsed event generator.
 
   Args:
     raw_generator (iterable[dict]): Plaso events.
@@ -133,7 +141,7 @@ def ParsedDataGenerator(raw_generator):
 
 
 def GetGraph(raw_generator, verbose=False):
-  """Create graph from raw data.
+  """Creates graph from raw data.
   Args:
     raw_generator (iterable[dict]): plaso events
 

@@ -19,7 +19,7 @@ class BsmEventParser(parser_interface.ParserInterface):
 
   @classmethod
   def Parse(cls, event):
-    """Parsing event.message with regexps.
+    """Parses event.message with regexps.
 
     Args:
       event (dict): dict serialized plaso event.
@@ -29,7 +29,10 @@ class BsmEventParser(parser_interface.ParserInterface):
     """
 
     data = event_data.EventData()
-    data.Add(event_data.Plaso(target=True, value=utils.GetImageName(event)))
+    storage_file_name = utils.GetImageName(event)
+    storage_datum = event_data.StorageFileName(
+        target=True, value=storage_file_name)
+    data.Add(storage_datum)
     event_type = event.get(u'event_type')
     message = event.get(u'message', '')
     if not (event_type == u'OpenSSH login (32800)' and
@@ -38,7 +41,9 @@ class BsmEventParser(parser_interface.ParserInterface):
 
     user = cls.USER_REGEXP.search(message)
     if user:
-      data.Add(event_data.UserName(target=True, value=user.group(1)))
+      user_name = user.group(1)
+      user_name_datum = event_data.UserName(target=True, value=user_name)
+      data.Add(user_name_datum)
 
     raw_tokens = cls.TOKEN_REGEXP.search(message)
     token_dict = {}
@@ -49,8 +54,11 @@ class BsmEventParser(parser_interface.ParserInterface):
         token_dict[key] = value
 
     machine_ip = token_dict.get(u'terminal_ip')
-    data.Add(event_data.Ip(source=True, value=machine_ip))
-    data.Add(event_data.UserId(target=True, value=token_dict.get(u'uid')))
+    ip_datum = event_data.Ip(source=True, value=machine_ip)
+    data.Add(ip_datum)
+    user_id = token_dict.get(u'uid')
+    user_id_datum = event_data.UserId(target=True, value=user_id)
+    data.Add(user_id_datum)
 
     return data
 

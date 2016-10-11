@@ -13,7 +13,7 @@ class WinEvtxEventParser(parser_interface.ParserInterface):
 
   @classmethod
   def Parse(cls, event):
-    """Parsing event data based on position in event.strings.
+    """Parses event data based on position in event.strings.
 
     Args:
       event (dict): dict serialized plaso event.
@@ -32,22 +32,31 @@ class WinEvtxEventParser(parser_interface.ParserInterface):
       strings = eval(strings)  # pylint: disable=eval-used
 
     if event_id == 4624:  # An account was successfully logged on.
-      data.Add(event_data.Plaso(value=utils.GetImageName(event), source=True))
-      data.Add(event_data.MachineName(
-          source=True, value=event.get(u'computer_name', '')))
+      storage_file_name = utils.GetImageName(event)
+      source_storage_datum = event_data.StorageFileName(
+          source=True, value=storage_file_name)
+      data.Add(source_storage_datum)
+      source_machine_name = event.get(u'computer_name', '')
+      source_machine_name_datum = event_data.MachineName(
+          source=True, value=source_machine_name)
+      data.Add(source_machine_name_datum)
       field_mapper = {
           event_data.UserId(source=True): 0,
           event_data.UserName(source=True): 1,
           event_data.UserId(target=True): 4,
           event_data.UserName(target=True): 5,
           event_data.MachineName(target=True): 11,
-          event_data.Ip(target=True): 18,
+          event_data.Ip(target=True): 18
       }
       for datum, field_index in field_mapper.items():
         datum.value = strings[field_index]
         data.Add(datum)
 
     elif event_id == 4648:  # Login with certificate.
+      source_machine_name = event.get(u'computer_name', '')
+      source_machine_name_datum = event_data.MachineName(
+          source=True, value=source_machine_name)
+      data.Add(source_machine_name_datum)
       field_mapper = {
           event_data.UserId(source=True): 0,
           event_data.UserName(source=True): 1,
@@ -55,14 +64,11 @@ class WinEvtxEventParser(parser_interface.ParserInterface):
           event_data.MachineName(target=True): 8,
           event_data.Ip(target=True): 12,
       }
-
       for datum, field_index in field_mapper.items():
         datum.value = strings[field_index]
         data.Add(datum)
 
-      data.Add(event_data.MachineName(
-          source=True, value=event[u'computer_name']))
-
     return data
+
 
 manager.ParserManager.RegisterParser(WinEvtxEventParser)

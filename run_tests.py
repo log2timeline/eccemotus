@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-"""Script to run the tests."""
+"""Script that runs the tests."""
 
 import unittest
 import sys

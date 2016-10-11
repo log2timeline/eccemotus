@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
-"""Tests for eccemotus.py"""
+"""Tests for eccemotus_lib.py."""
 
 import unittest
 import eccemotus.eccemotus_lib as eccemotus
 
 class EccemotusTest(unittest.TestCase):
-  """Test eccemotus."""
+  """Tests for eccemotus library."""
 
   def test_CreateGraph(self):
-    """Test CreateGraph."""
+    """Tests graph creation."""
     event = {
         u'__container_type__': u'event',
         u'__type__': u'AttributeContainer',

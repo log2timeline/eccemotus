@@ -13,7 +13,7 @@ class LinuxUtmpEventParser(parser_interface.ParserInterface):
 
   @classmethod
   def Parse(cls, event):
-    """Parsing event data directly from event fields.
+    """Parses event data directly from event fields.
 
     Args:
       event (dict): dict serialized plaso event.
@@ -22,18 +22,32 @@ class LinuxUtmpEventParser(parser_interface.ParserInterface):
       event_data.EventData: event data parsed from event.
     """
     data = event_data.EventData()
-    data.Add(event_data.Plaso(target=True, value=utils.GetImageName(event)))
-    data.Add(event_data.MachineName(target=True, value=event.get(u'hostname')))
+    storage_file_name = utils.GetImageName(event)
+    storage_datum = event_data.StorageFileName(
+        target=True, value=storage_file_name)
+    data.Add(storage_datum)
+    target_machine_name = event.get(u'hostname')
+    target_machine_name_datum = event_data.MachineName(
+        target=True, value=target_machine_name)
+    data.Add(target_machine_name_datum)
 
-    ip_address = event.get(u'ip_address', {})
-    if isinstance(ip_address, dict):
-      data.Add(event_data.Ip(source=True, value=ip_address.get(u'stream')))
-    elif isinstance(ip_address, basestring):
-      data.Add(event_data.Ip(source=True, value=ip_address))
+    source_ip_field = event.get(u'ip_address', {})
+    if isinstance(source_ip_field, dict):
+      source_ip = source_ip_field.get(u'stream')
+      source_ip_datum = event_data.Ip(source=True, value=source_ip)
+      data.Add(source_ip_datum)
+    elif isinstance(source_ip_field, basestring):
+      source_ip_datum = event_data.Ip(source=True, value=source_ip_field)
+      data.Add(source_ip_datum)
 
-    data.Add(event_data.MachineName(
-        source=True, value=event.get(u'computer_name')))
-    data.Add(event_data.UserName(target=True, value=event.get(u'user')))
+    source_machine_name = event.get(u'computer_name')
+    source_machine_name_datum = event_data.MachineName(
+        source=True, value=source_machine_name)
+    data.Add(source_machine_name_datum)
+    target_user_name = event.get(u'user')
+    target_user_name_datum = event_data.UserName(
+        target=True, value=target_user_name)
+    data.Add(target_user_name_datum)
     return data
 
 manager.ParserManager.RegisterParser(LinuxUtmpEventParser)
