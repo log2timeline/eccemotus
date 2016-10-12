@@ -250,81 +250,80 @@ class Graph(object):
     return {u'nodes': self.nodes, u'links': self.edges}
 
   def Finalize(self):
-    """ Assign each cluster of nodes its identifier.
+    """Assigns cluster identifier to each node.
 
-    Cluster is subgraph of has/is nodes and approximately represents one
-    machine. Identifier is an node id from this cluster (cluster center).
-    Preferably machine name or machine ip address. This will reset the old
-    cluster assignments.
+    Cluster is subgraph of nodes connected by has/is edges and approximately
+    represents one machine. Identifier is an node id from this cluster (cluster
+    center), preferably machine name or machine ip address. This will override
+    the old cluster assignments.
     """
+    def PropagateClusterId(node_id, cluster_id, G):
+      """Performs depth first search that propagates cluster_id to reachable
+      nodes.
 
-    for node in self.nodes:
-      if 'cluster' in node:
-        del node['cluster']
-
-    G = [[] for node in self.nodes]
-    for i, edge in enumerate(self.edges):
-      G[edge['source']].append(i)
-      G[edge['target']].append(i)
-
-    def DFS(node_id, cluster_id):
-      """Depth first search that propagates cluster_id to reachable nodes.
+      This follows only "has" and "is" edges. It modifies Graph.nodes.
 
       Args:
         node_id (int): id of current node.
-        cluster_id (int): cluster id i want to assign.
-      Returns:
-        None
-
-      This follows only "has" and "is" edges.
+        cluster_id (int): cluster id I want to assign.
+        G (list[list[int]]): adjacency graph.
       """
-
-      if 'cluster' in self.nodes[node_id]:
+      if u'cluster' in self.nodes[node_id]:
         # This means the node has already been visited.
         return
 
-      self.nodes[node_id]['cluster'] = cluster_id
+      self.nodes[node_id][u'cluster'] = cluster_id
 
       for edge_id in G[node_id]:
         edge = self.edges[edge_id]
-        if edge['type'] not in [self.EDGE_HAS, self.EDGE_IS]:
+        if edge[u'type'] not in [self.EDGE_HAS, self.EDGE_IS]:
           continue
 
-        DFS(edge['source'], cluster_id)
-        DFS(edge['target'], cluster_id)
+        PropagateClusterId(edge[u'source'], cluster_id, G)
+        PropagateClusterId(edge[u'target'], cluster_id, G)
 
 
     def Priority(item):
-      """ Priority of node to be the center of the cluster.
+      """Returns node's priority to be the center of the cluster.
 
-      Lover the priority, higher t the chance that the node will be the center
-      of cluster. This function is used as a sort key (that is the reason for
-      weird arguments.)
+      This function is used as a sort key (that is the reason for weird
+      arguments). Node is a center of cluster if it is the node with the
+      smallest Priority in the cluster.
 
       Args:
-        item (tuple[int, node]): node_id and actual node.
+        item (tuple[int, tuple]): node's id and tuple serialized node.
 
-      Return:
+      Returns:
         int: priority.
       """
       node = item[1]
       PRIORITY = {
-          'machine_name': 0,
-          'ip': 1,
-          'user_name':2,
-          'user_id': 3
+          u'machine_name': 0,
+          u'ip': 1,
+          u'user_name':2,
+          u'user_id': 3
       }
-      if node['type'] in PRIORITY:
-        return PRIORITY[node['type']]
+      if node[u'type'] in PRIORITY:
+        return PRIORITY[node[u'type']]
       else:
         return 10**10
 
+
+
+    for node in self.nodes:
+      if u'cluster' in node:
+        del node[u'cluster']
+
+    G = [[] for node in self.nodes]
+    for i, edge in enumerate(self.edges):
+      G[edge[u'source']].append(i)
+      G[edge[u'target']].append(i)
 
     nodes_with_ids = list(enumerate(self.nodes))
 
     sorted_nodes_with_ids = sorted(nodes_with_ids, key=Priority)
     for node_id, node in sorted_nodes_with_ids:
-      DFS(node_id, node_id)
+      PropagateClusterId(node_id, node_id, G)
 
 class Node(object):
   """Graph node.

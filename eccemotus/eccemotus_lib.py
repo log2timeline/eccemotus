@@ -51,8 +51,7 @@ def FileDataGenerator(filename, verbose=False):
       yield json.loads(line)
 
 
-def ElasticDataGenerator(
-    client, indexes, query=None, verbose=False):
+def ElasticDataGenerator(client, indexes, query=None, verbose=False):
   """Reads event data from elasticsearch.
 
   Uses scan function, so the data are actually streamed and do not need to be
@@ -81,7 +80,7 @@ def ElasticDataGenerator(
     query = {u'match_all': {}}
 
   # Elasticsearch query.
-  query_dict = {
+  full_query = {
       u'query': {
           u'filtered': {
               u'query': query,
@@ -95,7 +94,7 @@ def ElasticDataGenerator(
   }
   VERBOSE_INTERVAL = 10000
   logger = logging.getLogger(__name__)
-  results = helpers.scan(client, query=query_dict, index=indexes)
+  results = helpers.scan(client, query=full_query, index=indexes)
   for i, response in enumerate(results):
     if not i % VERBOSE_INTERVAL and verbose:
       logger.info(u'Elastic records {0:d}'.format(i))

@@ -90,6 +90,40 @@ class GraphTest(unittest.TestCase):
     self.assertEqual(graph.nodes[1][u'type'], target_machine.NAME)
     self.assertEqual(graph.nodes[1][u'value'], target_machine.value)
 
+  def test_Finalize(self):
+    """Tests graph finalization."""
+    graph = graph_lib.Graph()
+    graph.AddData(
+        event_data.MachineName(source=True, value=u'machine1'),
+        event_data.MachineName(target=True, value=u'machine2'), u'access', 10,
+        20)
+
+    graph.AddData(
+        event_data.MachineName(source=True, value=u'machine1'),
+        event_data.UserName(source=True, value=u'user1'), u'has', 10,
+        20)
+
+    graph.AddData(
+        event_data.UserName(source=True, value=u'user1'),
+        event_data.UserId(source=True, value=u'userid1'), u'is', 10,
+        20)
+
+    graph.AddData(
+        event_data.MachineName(target=True, value=u'machine2'),
+        event_data.UserName(target=True, value=u'user2'), u'has', 10,
+        20)
+
+    graph.AddData(
+        event_data.UserName(target=True, value=u'user2'),
+        event_data.UserId(target=True, value=u'userid2'), u'is', 10,
+        20)
+
+    graph.Finalize()
+    clusters = [node[u'cluster'] for node in graph.nodes]
+    expected_clusters = [0, 1, 0, 0, 1, 1]
+    self.assertEqual(clusters, expected_clusters)
+
+
 
   def test_MinimalSerialize(self):
     """Tests serialization."""
@@ -124,7 +158,6 @@ class GraphTest(unittest.TestCase):
                 u'target': 1
             }]
     }
-
     self.assertEqual(serialized, expected_serialized)
 
 

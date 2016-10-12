@@ -122,7 +122,7 @@ def ListGraphs():
   return data
 
 def AddGraph(name, graph):
-  """Routine for adding graph data to database.
+  """Adds graph to database.
 
   Args:
     name (str): graph name.
@@ -165,8 +165,8 @@ def Index():
       indexes = [el_index for el_index in raw_indexes.split() if el_index]
       client = eccemotus.GetClient(ip, port)
 
-      data_generator = eccemotus.ElasticDataGenerator(client, indexes,
-                                                      verbose=True)
+      data_generator = eccemotus.ElasticDataGenerator(
+          client, indexes, verbose=True)
       graph = eccemotus.GetGraph(data_generator, verbose=True)
       graph_JSON = json.dumps(graph.MinimalSerialize())
       AddGraph(graph_name, graph_JSON)

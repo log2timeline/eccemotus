@@ -57,6 +57,8 @@ def Render(args):
     args (argparse.Namespace): command line arguments.
   """
   directory = args.output
+  # We use this dirty trick to infer the directory where eccemotus_ui is
+  # installed because we need to copy some files from that directory.
   from eccemotus_ui import lateral
   base = os.path.dirname(lateral.__file__)
   if not os.path.exists(args.output):
@@ -73,10 +75,12 @@ def Render(args):
   if not os.path.exists(static):
     os.makedirs(static)
 
-  shutil.copy(os.path.join(base_static, u'd3/d3.min.js'),
-              os.path.join(static, u'd3.min.js'))
-  shutil.copy(os.path.join(base_static, u'lateral-map.js'),
-              os.path.join(static, u'lateral-map.js'))
+  shutil.copy(
+      os.path.join(base_static, u'd3/d3.min.js'),
+      os.path.join(static, u'd3.min.js'))
+  shutil.copy(
+      os.path.join(base_static, u'lateral-map.js'),
+      os.path.join(static, u'lateral-map.js'))
 
   print(u'open {0:s}'.format(os.path.join(directory, u'index.html')))
 
