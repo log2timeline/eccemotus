@@ -341,8 +341,9 @@ var LateralMap = (function() {
                 maxTimestamp = Math.max(maxTimestamp, e.timestamp);
             })
         })
-
-        this.timelineHolder = d3.select(this.element).append('p');
+        d3.select(this.element).select('#button-holder').remove();
+        this.timelineHolder = d3.select(this.element).append('p')
+            .attr('id', 'button-holder');
 
         var fromTimeInput = this.timelineHolder.append('input')
             .attr('type', 'number')
