@@ -154,3 +154,17 @@ def GetGraph(raw_generator, verbose=False):
   parsed_generator = ParsedDataGenerator(raw_generator)
   graph = graph_lib.CreateGraph(parsed_generator, verbose)
   return graph
+
+def LoadGraph(filename):
+  """Loads graph from file.
+
+  Args:
+    filename (str): name of file to be loaded.
+
+  Returns:
+    graph_lib.Graph: loaded graph.
+  """
+  with open(filename, u'r') as input_file:
+    data = json.loads(input_file.read())
+    graph = graph_lib.LoadGraph(data)
+    return graph

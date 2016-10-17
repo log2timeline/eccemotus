@@ -85,6 +85,28 @@ def Render(args):
   print(u'open {0:s}'.format(os.path.join(directory, u'index.html')))
 
 
+def Summary(args):
+  """Prints small graph summary.
+
+  This summary is list of entities in machine clusters.
+
+  Args:
+    args (argparse.Namespace): command line arguments.
+  """
+  graph = eccemotus.LoadGraph(args.input)
+  graph.Finalize()
+  summary = graph.Summary()
+  for cluster_id in sorted(summary):
+    print(u'Cluster #{0:d}'.format(cluster_id))
+    intend = u'  '
+    for node_type in summary[cluster_id]:
+      print(u'{0:s}Type: {1:s} Count: {2:d}'.format(
+          intend, node_type, len(summary[cluster_id][node_type])))
+
+      for value in summary[cluster_id][node_type]:
+        print(u'{0:s}{0:s}{1:s}'.format(intend, value))
+
+
 if __name__ == u'__main__':
   parser = argparse.ArgumentParser(prog=u'eccemotus')
   subparsers = parser.add_subparsers()
@@ -143,6 +165,13 @@ if __name__ == u'__main__':
 
   render_help = u'Directory to store the visualization and required files.'
   sub_render.add_argument(u'output', action=u'store', help=render_help)
+
+  summary_help = u'Prints summary of graph from JSON serialization.'
+  sub_summary = subparsers.add_parser(u'summary', help=summary_help)
+  sub_summary.set_defaults(routine=Summary)
+
+  input_help = u'JSON serialized graph (output of f2g or e2g).'
+  sub_summary.add_argument(u'input', action=u'store', help=input_help)
 
   parsed_args = parser.parse_args()
   parsed_args.routine(parsed_args)

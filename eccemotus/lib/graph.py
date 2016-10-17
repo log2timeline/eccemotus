@@ -49,7 +49,9 @@ class Graph(object):
 
   This dictionary (not class) based implementation has its meaning. It is
   easily extensible and prone to data integrity errors. It also has direct
-  mapping to data, that can be used in javascript (d3) visualization.
+  mapping to data, that can be used in javascript (d3) visualization. Moreover
+  it provides way to store graph from visualization back in Graph object and
+  allows to store things like node positions without any changes in code.
 
   Attributes:
     edges (list): list of graph edges.
@@ -325,6 +327,24 @@ class Graph(object):
     for node_id, node in sorted_nodes_with_ids:
       PropagateClusterId(node_id, node_id, G)
 
+  def Summary(self):
+    """Aggregate node values by node clusters and node types.
+
+    Returns:
+      dict [int,dict[str,list[str]]]: aggregation by cluster id and node type.
+    """
+    aggregation = {}
+    for node in self.nodes:
+      cluster_id = node.get(u'cluster')
+      aggregation.setdefault(cluster_id, {})
+      node_type = node.get(u'type')
+      aggregation[cluster_id].setdefault(node_type, [])
+      node_value = node.get(u'value')
+      aggregation[cluster_id][node_type].append(node_value)
+
+    return aggregation
+
+
 class Node(object):
   """Graph node.
 
@@ -390,4 +410,29 @@ def CreateGraph(events_data, verbose=False):
       logger.info(log_message.format(len(graph.nodes), len(graph.edges)))
 
   graph.Finalize()
+  return graph
+
+def LoadGraph(json_data):
+  """Restores graph from minimal serialization.
+
+  Args:
+    json_data (dict): dict serialization of graph (by MinimalSerialize
+        method).
+
+  Returns:
+    Graph: restored graph.
+  """
+  graph = Graph()
+  graph.nodes = json_data.get(u'nodes', [])
+  graph.edges = json_data.get(u'links', [])
+
+  for edge_id, edge in enumerate(graph.edges):
+    edge_tuple = (
+        edge.get(u'source'), edge.get(u'target'), edge.get('type'))
+    graph.edges_ids[edge_tuple] = edge_id
+
+  for node_id, node in enumerate(graph.nodes):
+    node_tuple = (node.get(u'type'), node.get(u'value'))
+    graph.nodes_ids[node_tuple] = node_id
+
   return graph
