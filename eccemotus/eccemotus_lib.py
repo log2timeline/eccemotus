@@ -3,7 +3,7 @@
 
 This can be used as a command line tool and as a library as well.
 First step is to create a data generator (FileDataGenerator or
-ElasticDataGenerator), depending of where you want to get plaso events from.
+ElasticDataGenerator), depending on where you want to get plaso events from.
 
 FileDataGenerator:
   Reads JSON_line file and yield one event at a time. It has to read the whole
@@ -144,6 +144,7 @@ def ParsedDataGenerator(raw_generator):
 
 def GetGraph(raw_generator, verbose=False):
   """Creates graph from raw data.
+
   Args:
     raw_generator (iterable[dict]): plaso events
 
