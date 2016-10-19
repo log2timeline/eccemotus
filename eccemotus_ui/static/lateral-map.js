@@ -131,7 +131,7 @@ var LateralMap = (function() {
              * Event handler for mouse dragging.
              */
             if(!d3.event.active) {
-                THAT.simulation.alphaTarget(0.1).restart();
+                THAT.simulation.alphaTarget(0.02).restart();
             }
             d.fx = d.x;
             d.fy = d.y;
@@ -239,6 +239,8 @@ var LateralMap = (function() {
                 }
             })
             .style('fill', 'black');
+
+        this.bingCustomClicks();
     }
 
     Map.prototype.filterEvents = function(fromTime, toTime) {
@@ -822,7 +824,7 @@ var LateralMap = (function() {
         var maper = {
             'has': 1,
             'is': 1,
-            'access': 0.1,
+            'access': 0.2,
         }
         if(link.type in maper) {
             return maper[link.type];
@@ -838,7 +840,7 @@ var LateralMap = (function() {
         var maper = {
             'has': 10,
             'is': 10,
-            'access': 300,
+            'access': 100,
         }
         if(link.type in maper) {
             return maper[link.type];
@@ -860,17 +862,37 @@ var LateralMap = (function() {
         }
     }
 
+    Map.prototype.bingCustomClicks = function(){
+        /**
+         * Binds custom callbackes set by customLinkClick and customNodeClick.
+         * This function must be called after each render.
+         */
+        var THAT = this;
+        if(this.customLinkClickCallback){
+            this.links.on('click.custom', function(d){
+                if (d3.event.ctrlKey) {
+                    THAT.customLinkClickCallback(d);
+                }
+            });
+        }
+        if(this.customNodeClickCallback){
+            this.nodes.on('click.custom', function(d){
+                if (d3.event.ctrlKey) {
+                    THAT.customNodeClickCallback(d);
+                }
+            });
+        }
+    }
+
     Map.prototype.customLinkClick = function(callback) {
         /**
          * Set custom on click event for links (on('click.custom')).
          * This will not override the default behavior but it will override any
          * other custom behavior that was set before.
          */
-        this.links.on('click.custom', function(d){
-            if (d3.event.ctrlKey) {
-                callback(d);
-            }
-        });
+
+        this.customLinkClickCallback = callback;
+        this.bingCustomClicks();
     }
 
     Map.prototype.customNodeClick = function(callback) {
@@ -879,13 +901,10 @@ var LateralMap = (function() {
          * This will not override the default behavior but it will override any
          * other custom behavior that was set before.
          */
-        this.nodes.on('click.custom', function(d){
-            if (d3.event.ctrlKey) {
-                callback(d);
-            }
-        });
-    }
 
+        this.customNodeClickCallback = callback;
+        this.bingCustomClicks();
+    }
     var exports = {}
     exports.Map = Map;
     return exports;

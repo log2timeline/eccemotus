@@ -19,5 +19,6 @@
   var map = new LateralMap.Map();
   $.get("{{ url_for('GetGraph', graph_id=graph.id) }}", function(data, status) {
     map.render(data.graph, "#graph", true /* we want buttons*/);
+    map.customNodeClick(function(d){console.log(d);});
   });
 </script>
