@@ -6,6 +6,7 @@ var LateralMap = (function() {
     var Map = function(width=1200, height=1100) {
         this.height = height;
         this.width = width;
+        this.stopped = false;
     };
     Map.prototype.setData = function(data) {
         /**
@@ -240,7 +241,7 @@ var LateralMap = (function() {
             })
             .style('fill', 'black');
 
-        this.bingCustomClicks();
+        this.bindCustomClicks();
     }
 
     Map.prototype.filterEvents = function(fromTime, toTime) {
@@ -424,12 +425,18 @@ var LateralMap = (function() {
         this.timelineHolder.append('button')
             .attr('type', 'button')
             .text('Stop')
-            .on('click.defualt', function(){THAT.simulation.stop();})
+            .on('click.defualt', function(){
+                THAT.stopped = true;
+                THAT.simulation.stop();
+            })
 
         this.timelineHolder.append('button')
             .attr('type', 'button')
             .text('Restart')
-            .on('click.defualt', function(){THAT.simulation.restart();})
+            .on('click.defualt', function(){
+                THAT.stopped=false;
+                THAT.simulation.restart();
+            })
     }
 
     Map.prototype.render = function(data, element, renderButtons=false) {
@@ -599,8 +606,9 @@ var LateralMap = (function() {
                 var link = this.G[d[i]][j];
 
                 if(link.type == 'access') {
-                    done.add(link.source.id);
-                    done.add(link.target.id);
+                    done.add(this.getRealTarget(link.source).id);
+                    done.add(this.getRealTarget(link.target).id);
+
                 }
             }
         }
@@ -620,7 +628,6 @@ var LateralMap = (function() {
         } else {
             return node;
         }
-        return node;
     }
 
     Map.prototype.tick = function() {
@@ -628,6 +635,9 @@ var LateralMap = (function() {
          * Handles one tick of simulation.
          */
         var THAT = this;
+        if (this.stopped){
+            return;
+        }
         // Using quadtree for fast collision detection.
         var q = d3.quadtree()
             .x(function(d) {
@@ -862,7 +872,7 @@ var LateralMap = (function() {
         }
     }
 
-    Map.prototype.bingCustomClicks = function(){
+    Map.prototype.bindCustomClicks = function(){
         /**
          * Binds custom callbackes set by customLinkClick and customNodeClick.
          * This function must be called after each render.
@@ -892,7 +902,7 @@ var LateralMap = (function() {
          */
 
         this.customLinkClickCallback = callback;
-        this.bingCustomClicks();
+        this.bindCustomClicks();
     }
 
     Map.prototype.customNodeClick = function(callback) {
@@ -903,7 +913,7 @@ var LateralMap = (function() {
          */
 
         this.customNodeClickCallback = callback;
-        this.bingCustomClicks();
+        this.bindCustomClicks();
     }
     var exports = {}
     exports.Map = Map;

@@ -15,5 +15,11 @@
 </body>
 <script>
   var map = new LateralMap.Map();
-  map.render(graph,"#graph", true /* we want buttons */)
+  map.render(graph,"#graph", true /* we want buttons */);
+  map.customLinkClick(function(d){
+    var i=0;
+    for(i=0; i<d.events.length; i++){
+      console.log(d.events[i]);
+    }
+  });
 </script>
