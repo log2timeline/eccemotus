@@ -107,7 +107,8 @@ class ParserManager(object):
 
 
       parsed_data.timestamp = event.get(u'timestamp')
-      parsed_data.event_id = event.get(u'timesketch_id', cls.GetNextEventId())
+      uuid = event.get(u'uuid', cls.GetNextEventId())
+      parsed_data.event_id = event.get(u'timesketch_id', uuid)
       return parsed_data
     else:
       return event_data.EventData()
