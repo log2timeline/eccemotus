@@ -49,7 +49,9 @@ class Graph(object):
 
   This dictionary (not class) based implementation has its meaning. It is
   easily extensible and prone to data integrity errors. It also has direct
-  mapping to data, that can be used in javascript (d3) visualization.
+  mapping to data, that can be used in javascript (d3) visualization. Moreover
+  it provides way to store graph from visualization back in Graph object and
+  allows to store things like node positions without any changes in code.
 
   Attributes:
     edges (list): list of graph edges.
@@ -249,6 +251,99 @@ class Graph(object):
     """Serializes only required data for visualization."""
     return {u'nodes': self.nodes, u'links': self.edges}
 
+  def Finalize(self):
+    """Assigns cluster identifier to each node.
+
+    Cluster is subgraph of nodes connected by has/is edges and approximately
+    represents one machine. Identifier is an node id from this cluster (cluster
+    center), preferably machine name or machine ip address. This will override
+    the old cluster assignments.
+    """
+    def PropagateClusterId(node_id, cluster_id, G):
+      """Performs depth first search that propagates cluster_id to reachable
+      nodes.
+
+      This follows only "has" and "is" edges. It modifies Graph.nodes.
+
+      Args:
+        node_id (int): id of current node.
+        cluster_id (int): cluster id I want to assign.
+        G (list[list[int]]): adjacency graph.
+      """
+      if u'cluster' in self.nodes[node_id]:
+        # This means the node has already been visited.
+        return
+
+      self.nodes[node_id][u'cluster'] = cluster_id
+
+      for edge_id in G[node_id]:
+        edge = self.edges[edge_id]
+        if edge[u'type'] not in [self.EDGE_HAS, self.EDGE_IS]:
+          continue
+
+        PropagateClusterId(edge[u'source'], cluster_id, G)
+        PropagateClusterId(edge[u'target'], cluster_id, G)
+
+
+    def Priority(item):
+      """Returns node's priority to be the center of the cluster.
+
+      This function is used as a sort key (that is the reason for weird
+      arguments). Node is a center of cluster if it is the node with the
+      smallest Priority in the cluster.
+
+      Args:
+        item (tuple[int, tuple]): node's id and tuple serialized node.
+
+      Returns:
+        int: priority.
+      """
+      node = item[1]
+      PRIORITY = {
+          u'machine_name': 0,
+          u'ip': 1,
+          u'user_name':2,
+          u'user_id': 3
+      }
+      if node[u'type'] in PRIORITY:
+        return PRIORITY[node[u'type']]
+      else:
+        return 10**10
+
+
+
+    for node in self.nodes:
+      if u'cluster' in node:
+        del node[u'cluster']
+
+    G = [[] for node in self.nodes]
+    for i, edge in enumerate(self.edges):
+      G[edge[u'source']].append(i)
+      G[edge[u'target']].append(i)
+
+    nodes_with_ids = list(enumerate(self.nodes))
+
+    sorted_nodes_with_ids = sorted(nodes_with_ids, key=Priority)
+    for node_id, node in sorted_nodes_with_ids:
+      PropagateClusterId(node_id, node_id, G)
+
+  def Summary(self):
+    """Aggregate node values by node clusters and node types.
+
+    Returns:
+      dict [int,dict[str,list[str]]]: aggregation by cluster id and node type.
+    """
+    aggregation = {}
+    for node in self.nodes:
+      cluster_id = node.get(u'cluster')
+      aggregation.setdefault(cluster_id, {})
+      node_type = node.get(u'type')
+      aggregation[cluster_id].setdefault(node_type, [])
+      node_value = node.get(u'value')
+      aggregation[cluster_id][node_type].append(node_value)
+
+    return aggregation
+
 
 class Node(object):
   """Graph node.
@@ -313,5 +408,31 @@ def CreateGraph(events_data, verbose=False):
     if not i % VERBOSE_INTERVAL and verbose:
       log_message = u'Nodes:{0:d} Edges: {1:d}'
       logger.info(log_message.format(len(graph.nodes), len(graph.edges)))
+
+  graph.Finalize()
+  return graph
+
+def LoadGraph(json_data):
+  """Restores graph from minimal serialization.
+
+  Args:
+    json_data (dict): dict serialization of graph (by MinimalSerialize
+        method).
+
+  Returns:
+    Graph: restored graph.
+  """
+  graph = Graph()
+  graph.nodes = json_data.get(u'nodes', [])
+  graph.edges = json_data.get(u'links', [])
+
+  for edge_id, edge in enumerate(graph.edges):
+    edge_tuple = (
+        edge.get(u'source'), edge.get(u'target'), edge.get('type'))
+    graph.edges_ids[edge_tuple] = edge_id
+
+  for node_id, node in enumerate(graph.nodes):
+    node_tuple = (node.get(u'type'), node.get(u'value'))
+    graph.nodes_ids[node_tuple] = node_id
 
   return graph

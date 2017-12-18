@@ -6,6 +6,39 @@ import unittest
 from eccemotus.lib import event_data
 from eccemotus.lib import graph as graph_lib
 
+def GetDummyGraph():
+  """Creates small dummy graph.
+
+  Returns:
+      graph_lib.Graph: dummy graph.
+  """
+  graph = graph_lib.Graph()
+  graph.AddData(
+      event_data.MachineName(source=True, value=u'machine1'),
+      event_data.MachineName(target=True, value=u'machine2'), u'access', 10,
+      20)
+
+  graph.AddData(
+      event_data.MachineName(source=True, value=u'machine1'),
+      event_data.UserName(source=True, value=u'user1'), u'has', 10,
+      20)
+
+  graph.AddData(
+      event_data.UserName(source=True, value=u'user1'),
+      event_data.UserId(source=True, value=u'userid1'), u'is', 10,
+      20)
+
+  graph.AddData(
+      event_data.MachineName(target=True, value=u'machine2'),
+      event_data.UserName(target=True, value=u'user2'), u'has', 10,
+      20)
+
+  graph.AddData(
+      event_data.UserName(target=True, value=u'user2'),
+      event_data.UserId(target=True, value=u'userid2'), u'is', 10,
+      20)
+  return graph
+
 class GraphTest(unittest.TestCase):
   """Tests for graph library."""
 
@@ -90,6 +123,33 @@ class GraphTest(unittest.TestCase):
     self.assertEqual(graph.nodes[1][u'type'], target_machine.NAME)
     self.assertEqual(graph.nodes[1][u'value'], target_machine.value)
 
+  def test_Finalize(self):
+    """Tests graph finalization."""
+    graph = GetDummyGraph()
+
+    graph.Finalize()
+    clusters = [node[u'cluster'] for node in graph.nodes]
+    expected_clusters = [0, 1, 0, 0, 1, 1]
+    self.assertEqual(clusters, expected_clusters)
+
+  def test_Summary(self):
+    """Tests graph summarization."""
+    graph = GetDummyGraph()
+    graph.Finalize()
+    summary = graph.Summary()
+    expected_summary = {
+        0: {
+            u'user_id': [u'userid1'],
+            u'machine_name': [u'machine1'],
+            u'user_name': [u'user1']
+        },
+        1: {
+            u'user_id': [u'userid2'],
+            u'machine_name': [u'machine2'],
+            u'user_name': [u'user2']
+        }
+    }
+    self.assertEqual(expected_summary, summary)
 
   def test_MinimalSerialize(self):
     """Tests serialization."""
@@ -124,7 +184,6 @@ class GraphTest(unittest.TestCase):
                 u'target': 1
             }]
     }
-
     self.assertEqual(serialized, expected_serialized)
 
 
@@ -197,3 +256,16 @@ class CreateGraphTest(unittest.TestCase):
     graph = graph_lib.CreateGraph(informations_list)
     self.assertEqual(len(graph.nodes), 4)
     self.assertEqual(len(graph.edges), 3)
+
+class LoadGraphTest(unittest.TestCase):
+  """Tests graph loading from json."""
+
+  def test_LoadGraph(self):
+    """Tests graph restoring."""
+    graph = GetDummyGraph()
+    serialized = graph.MinimalSerialize()
+    loaded_graph = graph_lib.LoadGraph(serialized)
+    self.assertEqual(graph.nodes, loaded_graph.nodes)
+    self.assertEqual(graph.edges, loaded_graph.edges)
+    self.assertEqual(graph.nodes_ids, loaded_graph.nodes_ids)
+    self.assertEqual(graph.edges_ids, loaded_graph.edges_ids)

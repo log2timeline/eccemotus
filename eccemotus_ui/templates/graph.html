@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+
+<head>
+  <meta charset="utf-8">
+  <script type="text/javascript" language="javascript" src="/static/d3/d3.min.js"></script>
+  <script type="text/javascript" language="javascript" src="/static/jquery.min.js"></script>
+  <script type="text/javascript" language="javascript" src="/static/lateral-map.js"></script>
+</head>
+
+<body>
+  <h2>{{ graph.id }} {{ graph.name }}</h2>
+  <p><a href="{{ url_for('Index') }}">Back</a></p>
+  <div id="graph">
+    <svg width="1200" height="900"></svg>
+  </div>
+</body>
+
+<script>
+  var map = new LateralMap.Map();
+  $.get("{{ url_for('GetGraph', graph_id=graph.id) }}", function(data, status) {
+    map.render(data.graph, "#graph", true /* we want buttons*/);
+    map.customNodeClick(function(d){console.log(d);});
+    map.customLinkClick(function(d){
+      var i=0;
+      for(i=0; i<d.events.length; i++){
+        console.log(d.events[i]);
+      }
+    });
+  });
+</script>
